@@ -5,8 +5,6 @@
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<SpaRoot>..\hqtcsdlreport.client</SpaRoot>
-		<SpaProxyLaunchCommand>npm run dev</SpaProxyLaunchCommand>
-		<SpaProxyServerUrl>https://localhost:49689</SpaProxyServerUrl>
 	</PropertyGroup>
 
 	<ItemGroup>
