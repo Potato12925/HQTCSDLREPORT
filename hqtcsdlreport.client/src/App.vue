@@ -108,6 +108,7 @@ const connect = async () => {
     alert('Không thể kết nối server!')
   } finally {
     loading.value = false
+    window.location.reload()
   }
 }
 

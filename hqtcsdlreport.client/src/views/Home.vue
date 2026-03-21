@@ -6,46 +6,49 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { connectDbApi } from "@/api/dataApi"
 import TableTree from '@/components/TableTree.vue'
 const tables = ref([])
 const loading = ref(false)
 
-// state expand
-const expandedTables = ref([])
-const expandedColumns = ref([])
-const expandedKeys = ref([])
-
 const server = ref('')
 const database = ref('')
 
-// toggle functions
-const toggleTable = (id) => {
-  if (expandedTables.value.includes(id)) {
-    expandedTables.value = expandedTables.value.filter(i => i !== id)
-  } else {
-    expandedTables.value.push(id)
+
+const selectedData = computed(() => {
+  const selectedTables = []
+  const selectedColumns = []
+
+  tables.value.forEach(table => {
+    if (table.checked) {
+      selectedTables.push(table)
+    }
+
+    table.columns.forEach(col => {
+      if (col.checked) {
+        selectedColumns.push(col)
+      }
+    })
+  })
+
+  return {
+    tables: selectedTables,
+    columns: selectedColumns
   }
+})
+
+const addCheckedField = (tables) => {
+  return tables.map(table => ({
+    ...table,
+    checked: false, // table
+    columns: table.columns.map(col => ({
+      ...col,
+      checked: false // column
+    }))
+  }))
 }
 
-const toggleColumns = (id) => {
-  if (expandedColumns.value.includes(id)) {
-    expandedColumns.value = expandedColumns.value.filter(i => i !== id)
-  } else {
-    expandedColumns.value.push(id)
-  }
-}
-
-const toggleKeys = (id) => {
-  if (expandedKeys.value.includes(id)) {
-    expandedKeys.value = expandedKeys.value.filter(i => i !== id)
-  } else {
-    expandedKeys.value.push(id)
-  }
-}
-
-// load DB
 const loadDb = async () => {
   loading.value = true
 
@@ -55,7 +58,7 @@ const loadDb = async () => {
       database: database.value
     })
 
-    tables.value = res.data.tables || []
+    tables.value = addCheckedField(res.data.tables || [])
 
   } catch (err) {
     console.error(err)
@@ -72,4 +75,8 @@ onMounted(() => {
     loadDb()
   }
 })
+
+watch(selectedData, (val) => {
+  console.log("SELECTED:", val)
+}, { deep: true })
 </script>

@@ -2,11 +2,18 @@
   <li>
 
     <!-- TABLE -->
-    <div
-      @click="toggle"
-      class="cursor-pointer font-semibold text-dark hover:text-primary"
-    >
-      {{ table.tableName }}
+    <div class="flex items-center gap-2">
+      <input
+        type="checkbox"
+        v-model="table.checked"
+      />
+
+      <div
+        @click="toggle"
+        class="cursor-pointer font-semibold text-dark hover:text-primary"
+      >
+        {{ table.tableName }}
+      </div>
     </div>
 
     <!-- EXPAND -->
@@ -35,8 +42,10 @@ const props = defineProps({
 })
 
 const expanded = ref(false)
+const isChecked = ref(false)
 
 const toggle = () => {
   expanded.value = !expanded.value
 }
+
 </script>

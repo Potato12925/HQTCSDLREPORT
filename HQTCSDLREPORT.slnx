@@ -1,7 +1,8 @@
 <Solution>
   <Project Path="hqtcsdlreport.client/hqtcsdlreport.client.esproj">
+    <BuildType Project="Release" />
     <Build />
-    <Deploy />
+    <Deploy Solution="Release|*" />
   </Project>
   <Project Path="HQTCSDLREPORT.Server/HQTCSDLREPORT.Server.csproj" />
 </Solution>
