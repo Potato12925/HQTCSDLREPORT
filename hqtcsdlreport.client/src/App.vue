@@ -1,69 +1,46 @@
-<script setup>
-</script>
-
 <template>
   <header class="bg-white shadow-md">
-    <nav class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+    <nav class=" mx-auto px-6 py-4 flex items-center justify-between">
 
       <!-- Logo -->
       <div class="text-xl font-bold text-blue-600">
         HQTCSDL
       </div>
 
-      <!-- Menu -->
-      <div class="flex gap-6 text-gray-700 font-medium">
+      <!-- Inputs -->
+      <div class="flex items-center gap-3">
+        <input
+          v-model="server"
+          type="text"
+          placeholder="Server"
+          class="border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400"
+        />
 
-        <router-link
-          to="/"
-          class="hover:text-blue-600 transition-colors duration-200"
-          active-class="text-blue-600 border-b-2 border-blue-600 pb-1"
+        <input
+          v-model="database"
+          type="text"
+          placeholder="Database"
+          class="border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400"
+        />
+        <button
+          @click="connect"
+          class="bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700 transition"
         >
-          Trang chủ
-        </router-link>
-
-        <router-link
-          to="/about"
-          class="hover:text-blue-600 transition-colors duration-200"
-          active-class="text-blue-600 border-b-2 border-blue-600 pb-1"
-        >
-          Giới thiệu
-        </router-link>
-
+          Kết nối
+        </button>
       </div>
-
+      
     </nav>
   </header>
-  
+    
   <main>
     <router-view />
   </main>
 </template>
 
-<style scoped>
-header {
-  line-height: 1.5;
-}
+<script setup>
+import { ref } from 'vue'
 
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
-}
-
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
-
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
-}
-</style>
+const server = ref('')
+const database = ref('')
+</script>
