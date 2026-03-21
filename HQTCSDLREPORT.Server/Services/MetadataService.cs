@@ -1,15 +1,12 @@
 ﻿using HQTCSDL.Models;
 using HQTCSDL.Models.Metadata;
+using HQTCSDLREPORT.Server.Models.Metadata;
 using Microsoft.Data.SqlClient;
 
 namespace HQTCSDL.Services
 {
     public class MetadataService
     {
-        public string BuildConnectionString(DbConnectionModel model)
-        {
-            return $"Server={model.Server};Database={model.Database};User Id={model.Username};Password={model.Password};TrustServerCertificate=True;";
-        }
 
         public bool TestConnection(string connectionString)
         {
@@ -35,74 +32,76 @@ namespace HQTCSDL.Services
             {
                 conn.Open();
 
-                string query = @"
-                    SELECT 
-                        t.object_id AS ObjectId,
-                        s.name AS SchemaName,
-                        t.name AS TableName,
-                        c.column_id AS ColumnId,
-                        c.name AS ColumnName,
-                        ty.name AS DataType,
-                        c.max_length AS MaxLength,
-                        c.is_nullable AS IsNullable,
-                        c.is_identity AS IsIdentity
-                    FROM sys.tables t
-                    JOIN sys.schemas s 
-                        ON t.schema_id = s.schema_id
-                    JOIN sys.columns c 
-                        ON t.object_id = c.object_id
-                    JOIN sys.types ty 
-                        ON c.user_type_id = ty.user_type_id
-                    WHERE 
-                        t.is_ms_shipped = 0
-                        AND t.temporal_type = 0
-                        AND t.is_external = 0
-                        AND t.is_filetable = 0
-                        AND t.name <> 'sysdiagrams'
-                        AND s.name NOT IN ('cdc')
-                    ORDER BY 
-                        t.name, 
-                        c.column_id;
-                ";
+                Dictionary<int, TableMetadata> tableDict = new();
 
-                SqlCommand cmd = new SqlCommand(query, conn);
-                SqlDataReader reader = cmd.ExecuteReader();
-
-                while (reader.Read())
+                using (SqlCommand cmd = new SqlCommand(QueryMetadata.getAllTablesQuery, conn))
+                using (SqlDataReader reader = cmd.ExecuteReader())
                 {
-                    string tableName = reader["TableName"].ToString();
-
-                    ColumnMetadata column = new ColumnMetadata
+                    while (reader.Read())
                     {
-                        ColumnId = (int)reader["ColumnId"],
-                        ColumnName = reader["ColumnName"].ToString(),
-                        DataType = reader["DataType"].ToString(),
-                        MaxLength = (short)reader["MaxLength"],
-                        IsNullable = (bool)reader["IsNullable"],
-                        IsIdentity = (bool)reader["IsIdentity"],
-                        TableName = tableName
-                    };
+                        int objectId = reader.GetInt32(0);
+                        string tableName = reader.GetString(1);
+                        int columnId = reader.GetInt32(2);
+                        string columnName = reader.GetString(3);
+                        string dataType = reader.GetString(4);
 
-                    database.Columns.Add(column);
-
-                    var table = database.Tables.FirstOrDefault(t => t.TableName == tableName);
-
-                    if (table == null)
-                    {
-                        table = new TableMetadata
+                        if (!tableDict.ContainsKey(objectId))
                         {
-                            ObjectId = (int)reader["ObjectId"],
-                            TableName = tableName,
-                            SchemaName = reader["SchemaName"].ToString()
+                            var table = new TableMetadata
+                            {
+                                ObjectId = objectId,
+                                TableName = tableName
+                            };
+
+                            tableDict[objectId] = table;
+                            database.Tables.Add(table);
+                        }
+
+                        var column = new ColumnMetadata
+                        {
+                            ObjectId = objectId,
+                            ColumnId = columnId,
+                            ColumnName = columnName,
+                            DataType = dataType
                         };
 
-                        database.Tables.Add(table);
+                        tableDict[objectId].Columns.Add(column);
                     }
-
-                    table.Columns.Add(column);
                 }
 
-                reader.Close();
+                
+                using (SqlCommand fkCmd = new SqlCommand(QueryMetadata.getForeighKey, conn))
+                using (SqlDataReader fkReader = fkCmd.ExecuteReader())
+                {
+                    while (fkReader.Read())
+                    {
+                        var fk = new ForeignKeyMetadata
+                        {
+                            ForeignKeyName = fkReader.GetString(0),
+
+                            ParentObjectId = fkReader.GetInt32(1),
+                            ParentTable = fkReader.GetString(2),
+                            ParentColumnId = fkReader.GetInt32(3),
+                            ParentColumn = fkReader.GetString(4),
+
+                            ReferencedObjectId = fkReader.GetInt32(5),
+                            ReferencedTable = fkReader.GetString(6),
+                            ReferencedColumnId = fkReader.GetInt32(7),
+                            ReferencedColumn = fkReader.GetString(8)
+                        };
+
+                        if (tableDict.TryGetValue(fk.ParentObjectId, out var table))
+                        {
+                            // tránh duplicate FK (nếu multi-column)
+                            if (!table.ForeignKeys.Any(x =>
+                                x.ForeignKeyName == fk.ForeignKeyName &&
+                                x.ParentColumnId == fk.ParentColumnId))
+                            {
+                                table.ForeignKeys.Add(fk);
+                            }
+                        }
+                    }
+                }
             }
 
             return database;

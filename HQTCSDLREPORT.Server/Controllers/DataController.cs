@@ -1,6 +1,7 @@
 ﻿using HQTCSDL.Models;
 using HQTCSDL.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 
 namespace HQTCSDL.Controllers
 {
@@ -39,8 +40,15 @@ namespace HQTCSDL.Controllers
         [HttpPost("connect")]
         public IActionResult Connect([FromBody] DbConnectionModel model)
         {
-            string connectionString =
-            $"Server={model.Server};Database={model.Database};User Id={model.Username};Password={model.Password};TrustServerCertificate=True;";
+            var builder = new SqlConnectionStringBuilder
+            {
+                DataSource = model.Server,
+                InitialCatalog = model.Database,
+                IntegratedSecurity = true,
+                TrustServerCertificate = true
+            };
+
+            string connectionString = builder.ConnectionString;
 
             if (!_metadataService.TestConnection(connectionString))
             {
