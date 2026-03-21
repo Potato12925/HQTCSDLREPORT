@@ -1,75 +1,109 @@
 <template>
-  <div class="p-6 space-y-6">
+  <div class="flex h-screen">
+<!-- SIDEBAR -->
+<div class="w-64 bg-white border-r border-primary/30 p-4 overflow-y-auto">
+  <h2 class="text-lg font-bold text-primary mb-4">Tables</h2>
 
-    <!-- HEADER -->
-    <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold text-primary">Database Explorer</h1>
+  <!-- LOADING -->
+  <div v-if="loading">⏳ Loading...</div>
 
-      <button
-        @click="loadDb"
-        class="bg-primary text-white px-4 py-2 rounded hover:bg-secondary transition"
-      >
-        Tải dữ liệu
-      </button>
-    </div>
-
-    <!-- INFO -->
-    <div class="text-sm text-dark opacity-70">
-      Server: <b>{{ server }}</b> | Database: <b>{{ database }}</b>
-    </div>
-
-    <!-- LOADING -->
-    <div v-if="loading" class="text-center py-10">
-      ⏳ Đang tải dữ liệu...
-    </div>
-
-    <!-- EMPTY -->
-    <div v-else-if="!tables.length" class="text-center py-10 text-gray-500">
-      Chưa có dữ liệu
-    </div>
-
-    <!-- TABLE LIST -->
-    <div
-      v-else
-      class="grid md:grid-cols-2 lg:grid-cols-3 gap-4"
+  <!-- TABLE LIST -->
+  <ul v-else class="space-y-2">
+    <li
+      v-for="table in tables"
+      :key="table.objectId"
+      @click="selectTable(table)"
+      class="cursor-pointer px-3 py-2 rounded hover:bg-primary/10"
+      :class="{
+        'bg-primary text-white': selectedTable?.objectId === table.objectId
+      }"
     >
-      <div
-        v-for="table in tables"
-        :key="table.objectId"
-        class="bg-white border border-primary/30 rounded-xl p-4 shadow hover:shadow-lg transition"
-      >
-        <!-- TABLE NAME -->
-        <h2 class="text-lg font-bold text-primary mb-3">
-          {{ table.tableName }}
-        </h2>
+      📦 {{ table.tableName }}
+    </li>
+  </ul>
+</div>
 
-        <!-- COLUMNS -->
-        <div class="mb-3">
-          <h3 class="font-semibold text-dark mb-1">Columns:</h3>
-          <ul class="ml-4 list-disc text-sm">
-            <li v-for="col in table.columns" :key="col.columnId">
-              {{ col.columnName }} 
-              <span class="text-gray-500">({{ col.dataType }})</span>
-            </li>
-          </ul>
-        </div>
+<!-- MAIN CONTENT -->
+<div class="flex-1 p-6 overflow-y-auto bg-light">
 
-        <!-- FOREIGN KEYS -->
-        <div v-if="table.foreignKeys?.length">
-          <h3 class="font-semibold text-dark mb-1">Relations:</h3>
-          <ul class="ml-4 list-disc text-sm">
-            <li v-for="fk in table.foreignKeys" :key="fk.foreignKeyName">
-              {{ fk.parentColumn }}
-              →
-              <span class="text-secondary">
-                {{ fk.referencedTable }}.{{ fk.referencedColumn }}
-              </span>
-            </li>
-          </ul>
-        </div>
+  <!-- HEADER -->
+  <div class="flex items-center justify-between mb-4">
+    <h1 class="text-2xl font-bold text-primary">
+      {{ selectedTable?.tableName || 'Chọn bảng' }}
+    </h1>
 
-      </div>
+    <button
+      @click="loadDb"
+      class="bg-primary text-white px-4 py-2 rounded hover:bg-secondary"
+    >
+      Reload
+    </button>
+  </div>
+
+  <!-- EMPTY -->
+  <div v-if="!selectedTable" class="text-gray-500">
+    👉 Chọn một bảng bên trái để xem chi tiết
+  </div>
+
+  <!-- TABLE DETAIL -->
+  <div v-else class="space-y-6">
+
+    <!-- COLUMNS -->
+    <div class="bg-white p-4 rounded shadow">
+      <h2 class="font-bold text-lg text-primary mb-3">Columns</h2>
+
+      <table class="w-full text-sm border">
+        <thead class="bg-primary text-white">
+          <tr>
+            <th class="p-2 text-left">Column</th>
+            <th class="p-2 text-left">Type</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="col in selectedTable.columns"
+            :key="col.columnId"
+            class="border-t hover:bg-gray-50"
+          >
+            <td class="p-2">{{ col.columnName }}</td>
+            <td class="p-2 text-gray-600">{{ col.dataType }}</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
+
+    <!-- FOREIGN KEYS -->
+    <div
+      v-if="selectedTable.foreignKeys?.length"
+      class="bg-white p-4 rounded shadow"
+    >
+      <h2 class="font-bold text-lg text-primary mb-3">Relationships</h2>
+
+      <table class="w-full text-sm border">
+        <thead class="bg-secondary text-white">
+          <tr>
+            <th class="p-2 text-left">Column</th>
+            <th class="p-2 text-left">Reference</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="fk in selectedTable.foreignKeys"
+            :key="fk.foreignKeyName"
+            class="border-t hover:bg-gray-50"
+          >
+            <td class="p-2">{{ fk.parentColumn }}</td>
+            <td class="p-2">
+              {{ fk.referencedTable }}.{{ fk.referencedColumn }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+</div>
 
   </div>
 </template>
@@ -79,17 +113,15 @@ import { ref, onMounted } from 'vue'
 import { connectDbApi } from "@/api/dataApi"
 
 const tables = ref([])
+const selectedTable = ref(null)
 const loading = ref(false)
 
 const server = ref('')
 const database = ref('')
 
-// 🔥 load database
+// load database
 const loadDb = async () => {
-  if (!server.value || !database.value) {
-    alert('Thiếu thông tin kết nối!')
-    return
-  }
+  if (!server.value || !database.value) return
 
   loading.value = true
 
@@ -99,19 +131,27 @@ const loadDb = async () => {
       database: database.value
     })
 
-    console.log(res.data)
-
     tables.value = res.data.tables || []
+
+    // auto chọn table đầu tiên
+    if (tables.value.length) {
+      selectedTable.value = tables.value[0]
+    }
 
   } catch (err) {
     console.error(err)
-    alert('Không load được database!')
+    alert('Lỗi load database!')
   } finally {
     loading.value = false
   }
 }
 
-// 🔥 auto load khi vào trang
+// chọn table
+const selectTable = (table) => {
+  selectedTable.value = table
+}
+
+// init
 onMounted(() => {
   server.value = localStorage.getItem('server') || ''
   database.value = localStorage.getItem('database') || ''
@@ -121,4 +161,3 @@ onMounted(() => {
   }
 })
 </script>
-
