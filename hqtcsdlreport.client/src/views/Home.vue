@@ -16,35 +16,46 @@ const server = ref('')
 const database = ref('')
 
 
-const selectedData = computed(() => {
-  const selectedTables = []
-  const selectedColumns = []
+const selectedTablesDict = computed(() => {
+  const result = {}
 
   tables.value.forEach(table => {
-    if (table.checked) {
-      selectedTables.push(table)
-    }
+    const selectedCols = table.checked
+      ? table.columns
+      : table.columns.filter(col => col.checked)
 
-    table.columns.forEach(col => {
-      if (col.checked) {
-        selectedColumns.push(col)
+    if (selectedCols.length > 0) {
+      const columnsDict = {}
+
+      selectedCols.forEach(col => {
+        columnsDict[Number(col.columnId)] = {
+          columnName: col.columnName,
+          dataType: col.dataType,
+          columnId: col.columnId
+        }
+      })
+
+      result[Number(table.objectId)] = {
+        tableName: table.tableName,
+        objectId: table.objectId,
+
+        columns: columnsDict,
+
+        foreignKeys: table.foreignKeys || []
       }
-    })
+    }
   })
 
-  return {
-    tables: selectedTables,
-    columns: selectedColumns
-  }
+  return result
 })
 
 const addCheckedField = (tables) => {
   return tables.map(table => ({
     ...table,
-    checked: false, // table
+    checked: false, 
     columns: table.columns.map(col => ({
       ...col,
-      checked: false // column
+      checked: false 
     }))
   }))
 }
@@ -76,7 +87,7 @@ onMounted(() => {
   }
 })
 
-watch(selectedData, (val) => {
-  console.log("SELECTED:", val)
+watch(selectedTablesDict, (val) => {
+  console.log("SELECTED:\n", JSON.stringify(val, null, 2))
 }, { deep: true })
 </script>

@@ -34,7 +34,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import ColumnItem from './ColumnItem.vue'
 
 const props = defineProps({
@@ -42,10 +42,37 @@ const props = defineProps({
 })
 
 const expanded = ref(false)
-const isChecked = ref(false)
 
 const toggle = () => {
   expanded.value = !expanded.value
 }
 
+watch(
+  () => props.table.checked,
+  (newVal) => {
+    if (newVal === true) {
+      props.table.columns.forEach(col => {
+        col.checked = true
+      })
+    }
+    else {
+      const allChecked = props.table.columns.every(col => col.checked)
+
+      if (allChecked) {
+        props.table.columns.forEach(col => {
+          col.checked = false
+        })
+      }
+    }
+  }
+)
+
+watch(
+  () => props.table.columns.map(col => col.checked),
+  (newValues) => {
+    const allChecked = newValues.every(v => v === true)
+    props.table.checked = allChecked
+  },
+  { deep: true }
+)
 </script>
