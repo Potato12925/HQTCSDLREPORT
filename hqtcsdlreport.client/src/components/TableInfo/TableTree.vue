@@ -15,7 +15,6 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
 import TableItem from './TableItem.vue'
 
 defineProps({

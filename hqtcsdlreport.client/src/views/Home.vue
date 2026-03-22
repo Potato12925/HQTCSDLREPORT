@@ -1,20 +1,20 @@
 <template>
   <div class="flex h-screen">
-  <TableTree :tables="tables" :loading="loading" />
+    <TableTree :tables="tables" :loading="loading" />
 
+    
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
 import { connectDbApi } from "@/api/dataApi"
-import TableTree from '@/components/TableTree.vue'
+import TableTree from '@/components/TableInfo/TableTree.vue'
 const tables = ref([])
 const loading = ref(false)
 
 const server = ref('')
 const database = ref('')
-
 
 const selectedTablesDict = computed(() => {
   const result = {}
@@ -25,21 +25,20 @@ const selectedTablesDict = computed(() => {
       : table.columns.filter(col => col.checked)
 
     if (selectedCols.length > 0) {
-      const columnsDict = {}
-
-      selectedCols.forEach(col => {
-        columnsDict[Number(col.columnId)] = {
-          columnName: col.columnName,
-          dataType: col.dataType,
-          columnId: col.columnId
-        }
-      })
+      // ✅ chuyển sang array + thêm selected
+      const columns = selectedCols.map(col => ({
+        columnId: col.columnId,
+        columnName: col.columnName,
+        dataType: col.dataType,
+        conditions: [],
+        selected: true
+      }))
 
       result[Number(table.objectId)] = {
         tableName: table.tableName,
         objectId: table.objectId,
 
-        columns: columnsDict,
+        columns,
 
         foreignKeys: table.foreignKeys || []
       }
