@@ -14,12 +14,12 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import TableItem from './TableItem.vue'
+import type { TableMetadata } from '@/types/database'
 
-defineProps({
-  tables: Array,
-  loading: Boolean
-})
-
+defineProps<{
+  tables: TableMetadata[]
+  loading: boolean
+}>()
 </script>

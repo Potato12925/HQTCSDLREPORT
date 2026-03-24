@@ -1,32 +1,60 @@
 <template>
   <div class="flex h-screen">
     <TableTree :tables="tables" :loading="loading" />
-
-    
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue'
 import { connectDbApi } from "@/api/dataApi"
 import TableTree from '@/components/TableInfo/TableTree.vue'
-const tables = ref([])
-const loading = ref(false)
 
-const server = ref('')
-const database = ref('')
+import type {
+  TableMetadata,
+  ForeignKeyMetadata,
+  DatabaseMetadata
+} from '@/types/database'
 
-const selectedTablesDict = computed(() => {
-  const result = {}
+/* ========================
+   STATE
+======================== */
+const tables = ref<TableMetadata[]>([])
+const loading = ref<boolean>(false)
 
-  tables.value.forEach(table => {
+const server = ref<string>('')
+const database = ref<string>('')
+
+/* ========================
+   TYPES cho output
+======================== */
+interface SelectedColumn {
+  columnId: number
+  columnName: string
+  dataType: string
+  conditions: any[]
+  selected: boolean
+}
+
+interface SelectedTable {
+  tableName: string
+  objectId: number
+  columns: SelectedColumn[]
+  foreignKeys: ForeignKeyMetadata[]
+}
+
+/* ========================
+   COMPUTED
+======================== */
+const selectedTablesDict = computed<Record<number, SelectedTable>>(() => {
+  const result: Record<number, SelectedTable> = {}
+
+  tables.value.forEach((table) => {
     const selectedCols = table.checked
       ? table.columns
       : table.columns.filter(col => col.checked)
 
     if (selectedCols.length > 0) {
-      // ✅ chuyển sang array + thêm selected
-      const columns = selectedCols.map(col => ({
+      const columns: SelectedColumn[] = selectedCols.map(col => ({
         columnId: col.columnId,
         columnName: col.columnName,
         dataType: col.dataType,
@@ -34,12 +62,10 @@ const selectedTablesDict = computed(() => {
         selected: true
       }))
 
-      result[Number(table.objectId)] = {
+      result[table.objectId] = {
         tableName: table.tableName,
         objectId: table.objectId,
-
         columns,
-
         foreignKeys: table.foreignKeys || []
       }
     }
@@ -48,18 +74,10 @@ const selectedTablesDict = computed(() => {
   return result
 })
 
-const addCheckedField = (tables) => {
-  return tables.map(table => ({
-    ...table,
-    checked: false, 
-    columns: table.columns.map(col => ({
-      ...col,
-      checked: false 
-    }))
-  }))
-}
-
-const loadDb = async () => {
+/* ========================
+   API
+======================== */
+const loadDb = async (): Promise<void> => {
   loading.value = true
 
   try {
@@ -68,8 +86,12 @@ const loadDb = async () => {
       database: database.value
     })
 
-    tables.value = addCheckedField(res.data.tables || [])
+    const data = res.data as DatabaseMetadata
 
+    // ❌ KHÔNG cần addCheckedField nữa
+    tables.value = data.tables || []
+
+    console.log("TABLES:\n", JSON.stringify(tables.value, null, 2))
   } catch (err) {
     console.error(err)
   } finally {
@@ -77,6 +99,9 @@ const loadDb = async () => {
   }
 }
 
+/* ========================
+   LIFECYCLE
+======================== */
 onMounted(() => {
   server.value = localStorage.getItem('server') || ''
   database.value = localStorage.getItem('database') || ''
@@ -86,7 +111,14 @@ onMounted(() => {
   }
 })
 
-watch(selectedTablesDict, (val) => {
-  console.log("SELECTED:\n", JSON.stringify(val, null, 2))
-}, { deep: true })
+/* ========================
+   WATCH
+======================== */
+watch(
+  selectedTablesDict,
+  (val: Record<number, SelectedTable>) => {
+    console.log("SELECTED:\n", JSON.stringify(val, null, 2))
+  },
+  { deep: true }
+)
 </script>

@@ -33,29 +33,29 @@
   </li>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, watch } from 'vue'
 import ColumnItem from './ColumnItem.vue'
+import type { TableMetadata } from '@/types/database'
 
-const props = defineProps({
-  table: Object
-})
+const props = defineProps<{
+  table: TableMetadata
+}>()
 
-const expanded = ref(false)
+const expanded = ref<boolean>(false)
 
-const toggle = () => {
+const toggle = (): void => {
   expanded.value = !expanded.value
 }
 
 watch(
   () => props.table.checked,
-  (newVal) => {
-    if (newVal === true) {
+  (newVal: boolean) => {
+    if (newVal) {
       props.table.columns.forEach(col => {
         col.checked = true
       })
-    }
-    else {
+    } else {
       const allChecked = props.table.columns.every(col => col.checked)
 
       if (allChecked) {
@@ -67,12 +67,12 @@ watch(
   }
 )
 
+
 watch(
   () => props.table.columns.map(col => col.checked),
-  (newValues) => {
+  (newValues: boolean[]) => {
     const allChecked = newValues.every(v => v === true)
     props.table.checked = allChecked
-  },
-  { deep: true }
+  }
 )
 </script>

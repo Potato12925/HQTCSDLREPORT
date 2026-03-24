@@ -13,13 +13,11 @@
   </li>
 </template>
 
-<script setup>
-import { ref } from 'vue'
+<script setup lang="ts">
+import type { ColumnMetadata } from '@/types/database'
 
-const props = defineProps({
-  column: Object
-})
 
-const isChecked = ref(false)
-
+defineProps<{
+  column: ColumnMetadata
+}>()
 </script>
