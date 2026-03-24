@@ -6,6 +6,7 @@ export type ID = number
 
 export interface ColumnRef {
   tableId: ID
+  columnId: ID
   columnName: string
 }
 
@@ -20,10 +21,7 @@ export interface QueryColumn {
 
   aggregate?: 'COUNT' | 'SUM' | 'AVG' | 'MIN' | 'MAX' | null
 
-  expression?: {
-    type: 'raw' | 'function' | 'case' | 'subquery'
-    value: string
-  } | null
+  criteria?: ConditionGroup | null
 }
 
 // ===================== CONDITION =====================
@@ -37,7 +35,7 @@ export type Operator =
   | 'IS NOT NULL'
 
 export interface Condition {
-  column: ColumnRef | string // allow raw string
+  column: ColumnRef | string 
   operator: Operator
   value?: any
 }
@@ -96,7 +94,7 @@ export interface QueryTable {
 export interface QueryState {
   distinct?: boolean
 
-  tables: Record<ID, QueryTable>
+  tables?: Record<ID, QueryTable>
 
   joins?: Join[]
 
