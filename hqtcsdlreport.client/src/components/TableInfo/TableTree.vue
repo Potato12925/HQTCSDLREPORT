@@ -9,17 +9,24 @@
         v-for="table in tables"
         :key="table.objectId"
         :table="table"
+        @toggle-column="(col, tbl) => emit('toggle-column', col, tbl)"
       />
+    />
     </ul>
   </div>
 </template>
 
 <script setup lang="ts">
-import TableItem from './TableItem.vue'
-import type { TableMetadata } from '@/types/database'
+import TableItem from "./TableItem.vue";
+import type { TableMetadata } from "@/types/database";
+import type { ColumnMetadata } from "@/types/database";
 
 defineProps<{
-  tables: TableMetadata[]
-  loading: boolean
-}>()
+  tables: TableMetadata[];
+  loading: boolean;
+}>();
+
+const emit = defineEmits<{
+  (e: "toggle-column", column: ColumnMetadata, table: TableMetadata): void;
+}>();
 </script>

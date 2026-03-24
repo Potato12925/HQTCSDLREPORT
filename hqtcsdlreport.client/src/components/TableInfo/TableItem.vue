@@ -22,11 +22,12 @@
       class="ml-4 mt-2 border-l border-gray-200 pl-2"
     >
       <ul class="space-y-1 text-sm text-gray-600">
-        <ColumnItem
-          v-for="col in table.columns"
-          :key="col.columnId"
-          :column="col"
-        />
+      <ColumnItem
+        v-for="col in table.columns"
+        :key="col.columnId"
+        :column="col"
+        @toggle-column="handleToggleColumn"
+      />
       </ul>
     </div>
 
@@ -37,6 +38,7 @@
 import { ref, watch } from 'vue'
 import ColumnItem from './ColumnItem.vue'
 import type { TableMetadata } from '@/types/database'
+import type { ColumnMetadata } from '@/types/database'
 
 const props = defineProps<{
   table: TableMetadata
@@ -46,6 +48,14 @@ const expanded = ref<boolean>(false)
 
 const toggle = (): void => {
   expanded.value = !expanded.value
+}
+
+const emit = defineEmits<{
+  (e: 'toggle-column', column: ColumnMetadata, table: TableMetadata): void
+}>()
+
+const handleToggleColumn = (column: ColumnMetadata) => {
+  emit('toggle-column', column, props.table)
 }
 
 watch(

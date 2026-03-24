@@ -4,6 +4,7 @@
     <input
       type="checkbox"
       v-model="column.checked"
+      @change="onChange"
     />
 
     <span>
@@ -17,7 +18,15 @@
 import type { ColumnMetadata } from '@/types/database'
 
 
-defineProps<{
+const props = defineProps<{
   column: ColumnMetadata
 }>()
+
+const emit = defineEmits<{
+  (e: 'toggle-column', column: ColumnMetadata): void
+}>()
+
+const onChange = () => {
+  emit('toggle-column', props.column)
+}
 </script>
