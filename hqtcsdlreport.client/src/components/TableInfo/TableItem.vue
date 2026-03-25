@@ -64,6 +64,8 @@ watch(
     if (newVal) {
       props.table.columns.forEach(col => {
         col.checked = true
+        expanded.value = true
+        emit('toggle-column', col, props.table)
       })
     } else {
       const allChecked = props.table.columns.every(col => col.checked)
@@ -71,6 +73,7 @@ watch(
       if (allChecked) {
         props.table.columns.forEach(col => {
           col.checked = false
+          emit('toggle-column', col, props.table)
         })
       }
     }

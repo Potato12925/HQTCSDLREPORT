@@ -11,7 +11,6 @@
         :table="table"
         @toggle-column="(col, tbl) => emit('toggle-column', col, tbl)"
       />
-    />
     </ul>
   </div>
 </template>

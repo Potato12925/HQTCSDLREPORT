@@ -133,7 +133,6 @@ const handleToggleColumn = (
 
   rebuildJoins();
 
-  console.clear();
   console.log("queryState:\n", JSON.stringify(queryState.value, null, 2));
 };
 
@@ -197,7 +196,6 @@ const loadDb = async (): Promise<void> => {
 
     tables.value = data.tables || [];
 
-    console.log("data:\n", JSON.stringify(data, null, 2));
   } catch (err) {
     console.error(err);
   } finally {
