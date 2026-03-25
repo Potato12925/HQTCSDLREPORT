@@ -36,12 +36,21 @@
           class="border px-2 py-1 rounded bg-white text-sm"
         />
 
-        <!-- CRITERIA (simple input) -->
-        <input
-          v-model="criteriaMap[col.column.columnId]"
-          placeholder="criteria (e.g > 10)"
+        <!-- CRITERIA -->
+        <select
+          :value="criteriaOperatorMap[getCriteriaKey(col)] ?? '='"
           class="border px-2 py-1 rounded bg-white text-sm"
-          @change="updateCriteria(col)"
+          @change="onOperatorChange(col, $event)"
+        >
+          <option v-for="op in operatorOptions" :key="op" :value="op">  
+            {{ op }}
+          </option>
+        </select>
+        <input
+          v-model="criteriaValueMap[getCriteriaKey(col)]"
+          placeholder="value"
+          class="border px-2 py-1 rounded bg-white text-sm"
+          @input="updateCriteria"
         />
       </div>
     </div>
@@ -50,7 +59,14 @@
 
 <script setup lang="ts">
 import { computed, reactive } from "vue";
-import type { QueryState, QueryTable, QueryColumn, ConditionGroup } from "@/types/queryState";
+import type {
+  QueryState,
+  QueryTable,
+  QueryColumn,
+  Condition,
+  ConditionGroup,
+  Operator,
+} from "@/types/queryState";
 import DistinctToggle from "./DistinctToggle.vue";
 /* ========================
    PROPS
@@ -70,31 +86,58 @@ const tables = computed<QueryTable[]>(() => {
 /* ========================
    CRITERIA MAP
 ======================== */
-const criteriaMap = reactive<Record<number, string>>({});
+const operatorOptions: Operator[] = ["=", "!=", ">", "<", ">=", "<=", "LIKE"];
+const criteriaOperatorMap = reactive<Record<string, Operator>>({});
+const criteriaValueMap = reactive<Record<string, string>>({});
+
+const getCriteriaKey = (col: QueryColumn) => `${col.column.tableId}-${col.column.columnId}`;
+
+const onOperatorChange = (col: QueryColumn, event: Event) => {
+  criteriaOperatorMap[getCriteriaKey(col)] = (event.target as HTMLSelectElement).value as Operator;
+  updateCriteria();
+};
 
 /* ========================
    UPDATE CRITERIA
 ======================== */
-const updateCriteria = (col: QueryColumn) => {
-  const value = criteriaMap[col.column.columnId];
+const updateCriteria = () => {
+  const whereConditions: Condition[] = [];
 
-  if (!value) {
-    col.criteria = null;
-    return;
+  for (const table of tables.value) {
+    for (const col of table.columns) {
+      const key = getCriteriaKey(col);
+      const operator = criteriaOperatorMap[key] ?? "=";
+      const value = (criteriaValueMap[key] ?? "").trim();
+
+      if (!value) {
+        col.criteria = null;
+        continue;
+      }
+
+      const condition: Condition = {
+        column: col.column,
+        operator,
+        value,
+      };
+
+      col.criteria = {
+        type: "AND",
+        conditions: [condition],
+      };
+
+      whereConditions.push(condition);
+    }
   }
 
-  // 🔥 simple parse (basic)
-  const condition: ConditionGroup = {
-    type: "AND",
-    conditions: [
-      {
-        column: col.column,
-        operator: ">",
-        value: value,
-      },
-    ],
-  };
-
-  col.criteria = condition;
+  props.state.where =
+    whereConditions.length > 0
+      ? {
+          mode: "builder",
+          group: {
+            type: "AND",
+            conditions: whereConditions,
+          } as ConditionGroup,
+        }
+      : null;
 };
 </script>
