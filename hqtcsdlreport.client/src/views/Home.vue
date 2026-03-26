@@ -1,10 +1,6 @@
 <template>
   <div class="flex h-screen">
-    <TableTree
-      :tables="tables"
-      :loading="loading"
-      @toggle-column="handleToggleColumn"
-    />
+    <TableTree :tables="tables" :loading="loading" @toggle-column="handleToggleColumn" />
 
     <QueryForm :queryState="queryState" />
   </div>
@@ -16,12 +12,7 @@ import { connectDbApi } from "@/api/dataApi";
 import TableTree from "@/components/TableInfo/TableTree.vue";
 import QueryForm from "@/components/QueryForm/QueryForm.vue";
 
-import type {
-  QueryState,
-  QueryTable,
-  QueryColumn,
-  Join,
-} from "@/types/queryState";
+import type { QueryState, QueryTable, QueryColumn, Join, WhereClause, RawCondition, ConditionGroup} from "@/types/queryState";
 
 import type {
   TableMetadata,
@@ -39,15 +30,34 @@ const loading = ref<boolean>(false);
 const server = ref<string>("");
 const database = ref<string>("");
 
-const queryState = ref<QueryState>({});
+const criteriaColumn = ref<ConditionGroup>({
+  type: "AND",
+  conditions: [],
+})
+
+const WhereRaw = ref<RawCondition>({
+  type: "raw",
+  sql: "",
+})
+const defaultWhere: WhereClause = {
+  mode: "builder",
+  group: {
+    type: "AND",
+    conditions: [
+      criteriaColumn.value,
+      WhereRaw.value,
+    ],
+  },
+};
+
+const queryState = ref<QueryState>({
+  where: defaultWhere,
+});
 
 /* ================================
    HELPERS
 ================================ */
-const mapToQueryColumn = (
-  table: TableMetadata,
-  column: ColumnMetadata
-): QueryColumn => {
+const mapToQueryColumn = (table: TableMetadata, column: ColumnMetadata): QueryColumn => {
   return {
     show: true,
     column: {
@@ -89,10 +99,7 @@ const mapForeignKeyToJoin = (foreignKey: ForeignKeyMetadata): Join => {
 /* ================================
    CORE: UPDATE STATE (EVENT-DRIVEN)
 ================================ */
-const handleToggleColumn = (
-  column: ColumnMetadata,
-  table: TableMetadata
-) => {
+const handleToggleColumn = (column: ColumnMetadata, table: TableMetadata) => {
   if (!queryState.value.tables) {
     queryState.value.tables = {};
   }
@@ -111,17 +118,13 @@ const handleToggleColumn = (
 
   const queryTable = queryState.value.tables[tableId];
 
-  const existingIndex = queryTable.columns.findIndex(
-    (c) => c.column.columnId === column.columnId
-  );
+  const existingIndex = queryTable.columns.findIndex((c) => c.column.columnId === column.columnId);
 
   if (column.checked) {
     if (existingIndex === -1) {
       queryTable.columns.push(mapToQueryColumn(table, column));
     }
-  }
-
-  else {
+  } else {
     if (existingIndex !== -1) {
       queryTable.columns.splice(existingIndex, 1);
     }
@@ -145,9 +148,7 @@ const rebuildJoins = () => {
     return;
   }
 
-  const selectedTableIds = new Set<number>(
-    Object.keys(queryState.value.tables).map(Number)
-  );
+  const selectedTableIds = new Set<number>(Object.keys(queryState.value.tables).map(Number));
 
   const joinsMap = new Map<string, Join>();
 
@@ -175,9 +176,7 @@ const rebuildJoins = () => {
     });
   });
 
-  queryState.value.joins = joinsMap.size
-    ? Array.from(joinsMap.values())
-    : undefined;
+  queryState.value.joins = joinsMap.size ? Array.from(joinsMap.values()) : undefined;
 };
 
 /* ================================
@@ -195,7 +194,6 @@ const loadDb = async (): Promise<void> => {
     const data = res.data as DatabaseMetadata;
 
     tables.value = data.tables || [];
-
   } catch (err) {
     console.error(err);
   } finally {

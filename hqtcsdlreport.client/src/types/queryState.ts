@@ -39,10 +39,13 @@ export interface Condition {
   operator: Operator
   value?: any
 }
-
+export interface RawCondition {
+  type: 'raw'
+  sql: string
+}
 export interface ConditionGroup {
   type: 'AND' | 'OR'
-  conditions: (Condition | ConditionGroup)[]
+  conditions: (Condition | ConditionGroup | RawCondition)[]
 }
 
 // ===================== WHERE =====================
@@ -52,10 +55,7 @@ export type WhereClause =
       mode: 'builder'
       group: ConditionGroup
     }
-  | {
-      mode: 'raw'
-      sql: string
-    }
+  | RawCondition
 
 // ===================== ORDER BY =====================
 
