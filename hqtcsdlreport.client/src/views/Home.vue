@@ -7,12 +7,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, watch } from "vue";
 import { connectDbApi } from "@/api/dataApi";
 import TableTree from "@/components/TableInfo/TableTree.vue";
 import QueryForm from "@/components/QueryForm/QueryForm.vue";
 
-import type { QueryState, QueryTable, QueryColumn, Join, WhereClause, RawCondition, ConditionGroup} from "@/types/queryState";
+import type {
+  QueryState,
+  QueryTable,
+  QueryColumn,
+  Join,
+} from "@/types/queryState";
 
 import type {
   TableMetadata,
@@ -30,29 +35,7 @@ const loading = ref<boolean>(false);
 const server = ref<string>("");
 const database = ref<string>("");
 
-const criteriaColumn = ref<ConditionGroup>({
-  type: "AND",
-  conditions: [],
-})
-
-const WhereRaw = ref<RawCondition>({
-  type: "raw",
-  sql: "",
-})
-const defaultWhere: WhereClause = {
-  mode: "builder",
-  group: {
-    type: "AND",
-    conditions: [
-      criteriaColumn.value,
-      WhereRaw.value,
-    ],
-  },
-};
-
-const queryState = ref<QueryState>({
-  where: defaultWhere,
-});
+const queryState = ref<QueryState>({});
 
 /* ================================
    HELPERS
@@ -135,8 +118,6 @@ const handleToggleColumn = (column: ColumnMetadata, table: TableMetadata) => {
   }
 
   rebuildJoins();
-
-  console.log("queryState:\n", JSON.stringify(queryState.value, null, 2));
 };
 
 /* ================================
@@ -212,4 +193,13 @@ onMounted(() => {
     loadDb();
   }
 });
+
+watch(
+  queryState,
+  () => {
+    console.clear();
+    console.log("Updated Query State:\n", JSON.stringify(queryState.value, null, 2));
+  },
+  { deep: true },
+);
 </script>

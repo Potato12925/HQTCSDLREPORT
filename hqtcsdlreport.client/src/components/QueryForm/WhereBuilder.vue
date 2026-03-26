@@ -2,124 +2,111 @@
   <div class="mb-6">
     <h3 class="font-semibold text-primary mb-2">WHERE</h3>
 
-    <!-- INPUT ROW -->
-    <div class="flex gap-2 mb-2 flex-wrap">
+    <!-- RAW SQL INPUT -->
+    <textarea
+      v-model="rawSql"
+      placeholder="e.g. age > 18 AND name LIKE 'A%'"
+      class="w-full border px-3 py-2 rounded bg-white text-dark text-sm font-mono"
+      rows="4"
+    />
 
-      <!-- COLUMN -->
-      <select
-        v-model="col"
-        class="border px-2 py-1 rounded bg-white text-dark"
-      >
-        <option disabled value="">Column</option>
-        <option
-          v-for="c in columns"
-          :key="key(c)"
-          :value="c"
-        >
-          {{ c.columnName }} 
-        </option>
-      </select>
-
-      <!-- OPERATOR -->
-      <select
-        v-model="op"
-        class="border px-2 py-1 rounded bg-white text-dark"
-      >
-        <option>=</option>
-        <option>!=</option>
-        <option>></option>
-        <option><</option>
-        <option>>=</option>
-        <option><=</option>
-        <option>LIKE</option>
-      </select>
-
-      <!-- VALUE -->
-      <input
-        v-model="val"
-        placeholder="value"
-        class="border px-2 py-1 rounded bg-white text-dark"
-      />
-
-      <!-- ADD BUTTON -->
+    <!-- ACTION -->
+    <div class="flex gap-2 mt-2">
       <button
-        @click="add"
-        class="bg-primary text-white px-3 py-1 rounded hover:bg-secondary transition"
+        @click="clear"
+        class="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300 transition"
       >
-        Add
+        Clear
       </button>
     </div>
 
-    <!-- CONDITIONS LIST -->
-    <div class="space-y-2">
-      <div
-        v-for="(c, i) in conditions"
-        :key="i"
-        class="flex justify-between items-center bg-white p-2 rounded border"
-      >
-        <span class="text-sm text-dark">
-          {{ display(c) }}
-        </span>
-
-        <button
-          @click="remove(i)"
-          class="text-red-500 hover:text-red-700 transition"
-        >
-          ✕
-        </button>
+    <!-- PREVIEW -->
+    <div v-if="preview" class="mt-3 text-sm text-gray-600">
+      <strong>Preview:</strong>
+      <div class="bg-gray-100 p-2 rounded mt-1 font-mono">
+        {{ preview }}
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
-import type { QueryState, ColumnRef, Condition, ConditionGroup } from "@/types/queryState";
+import { ref, computed, watch } from "vue";
+import type { QueryState, RawCondition, ConditionGroup } from "@/types/queryState";
 
+/* ========================
+   PROPS
+======================== */
 const props = defineProps<{
   state: QueryState;
-  columns: ColumnRef[];
 }>();
 
-const col = ref<ColumnRef | "">("");
-const op = ref<any>("=");
-const val = ref("");
+/* ========================
+   STATE
+======================== */
+const rawSql = ref("");
 
-const conditions = ref<Condition[]>([]);
+/* ========================
+   PREVIEW
+======================== */
+const preview = computed(() => rawSql.value.trim());
 
-const add = () => {
-  if (!col.value) return;
+/* ========================
+   AUTO UPDATE (🔥 MAIN FIX)
+======================== */
+watch(
+  rawSql,
+  (value) => {
+    const sql = value.trim();
 
-  conditions.value.push({
-    column: col.value,
-    operator: op.value,
-    value: val.value,
-  });
+    if (!sql) {
+      props.state.where = null;
+      return;
+    }
 
-  update();
+    const rawCondition: RawCondition = {
+      type: "raw",
+      sql,
+    };
+
+    const group: ConditionGroup = {
+      type: "AND",
+      conditions: [rawCondition],
+    };
+
+    props.state.where = {
+      mode: "builder",
+      group,
+    };
+  },
+  { immediate: true }
+);
+
+/* ========================
+   CLEAR
+======================== */
+const clear = () => {
+  rawSql.value = "";
+  props.state.where = null;
 };
 
-const remove = (i: number) => {
-  conditions.value.splice(i, 1);
-  update();
-};
+/* ========================
+   SYNC FROM STATE
+======================== */
+watch(
+  () => props.state.where,
+  (where) => {
+    if (!where || where.mode !== "builder") {
+      rawSql.value = "";
+      return;
+    }
 
-const update = () => {
-  const group: ConditionGroup = {
-    type: "AND",
-    conditions: conditions.value,
-  };
+    const first = where.group.conditions[0];
 
-  props.state.where = {
-    mode: "builder",
-    group,
-  };
-};
-
-const display = (c: Condition) => {
-  if (typeof c.column === "string") return c.column;
-  return `${c.column.columnName} ${c.operator} ${c.value}`;
-};
-
-const key = (c: ColumnRef) => `${c.tableId}-${c.columnId}`;
+    if (typeof first === "object" && "type" in first && first.type === "raw") {
+      rawSql.value = first.sql;
+    }
+  },
+  { immediate: true }
+);
 </script>

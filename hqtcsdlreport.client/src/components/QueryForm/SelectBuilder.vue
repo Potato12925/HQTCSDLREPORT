@@ -2,6 +2,7 @@
   <div class="mb-6">
     <h3 class="font-semibold text-primary mb-2">SELECT</h3>
     <DistinctToggle :state="state" />
+
     <div v-for="table in tables" :key="table.id" class="mb-4">
       <!-- TABLE NAME -->
       <div class="font-medium text-dark mb-1">
@@ -42,10 +43,11 @@
           class="border px-2 py-1 rounded bg-white text-sm"
           @change="onOperatorChange(col, $event)"
         >
-          <option v-for="op in operatorOptions" :key="op" :value="op">  
+          <option v-for="op in operatorOptions" :key="op" :value="op">
             {{ op }}
           </option>
         </select>
+
         <input
           v-model="criteriaValueMap[getCriteriaKey(col)]"
           placeholder="value"
@@ -64,10 +66,10 @@ import type {
   QueryTable,
   QueryColumn,
   Condition,
-  ConditionGroup,
   Operator,
 } from "@/types/queryState";
 import DistinctToggle from "./DistinctToggle.vue";
+
 /* ========================
    PROPS
 ======================== */
@@ -84,16 +86,23 @@ const tables = computed<QueryTable[]>(() => {
 });
 
 /* ========================
-   CRITERIA MAP
+   CRITERIA MAP (UI STATE)
 ======================== */
 const operatorOptions: Operator[] = ["=", "!=", ">", "<", ">=", "<=", "LIKE"];
+
 const criteriaOperatorMap = reactive<Record<string, Operator>>({});
 const criteriaValueMap = reactive<Record<string, string>>({});
 
-const getCriteriaKey = (col: QueryColumn) => `${col.column.tableId}-${col.column.columnId}`;
+const getCriteriaKey = (col: QueryColumn) =>
+  `${col.column.tableId}-${col.column.columnId}`;
 
+/* ========================
+   HANDLERS
+======================== */
 const onOperatorChange = (col: QueryColumn, event: Event) => {
-  criteriaOperatorMap[getCriteriaKey(col)] = (event.target as HTMLSelectElement).value as Operator;
+  criteriaOperatorMap[getCriteriaKey(col)] =
+    (event.target as HTMLSelectElement).value as Operator;
+
   updateCriteria();
 };
 
@@ -101,43 +110,50 @@ const onOperatorChange = (col: QueryColumn, event: Event) => {
    UPDATE CRITERIA
 ======================== */
 const updateCriteria = () => {
-  const whereConditions: Condition[] = [];
 
   for (const table of tables.value) {
     for (const col of table.columns) {
       const key = getCriteriaKey(col);
       const operator = criteriaOperatorMap[key] ?? "=";
-      const value = (criteriaValueMap[key] ?? "").trim();
+      const rawValue = (criteriaValueMap[key] ?? "").trim();
 
-      if (!value) {
+      // ❌ Không có value → clear
+      if (!rawValue) {
         col.criteria = null;
         continue;
       }
 
-      const condition: Condition = {
-        column: col.column,
-        operator,
-        value,
-      };
+      let condition: Condition;
 
-      col.criteria = {
-        type: "AND",
-        conditions: [condition],
-      };
+      // ✅ Handle special operators
+      if (operator === "IS NULL" || operator === "IS NOT NULL") {
+        condition = {
+          column: col.column,
+          operator,
+        };
+      } else if (operator === "IN") {
+        condition = {
+          column: col.column,
+          operator,
+          value: rawValue.split(",").map((v) => v.trim()),
+        };
+      } else if (operator === "BETWEEN") {
+        const [min, max] = rawValue.split(",");
+        condition = {
+          column: col.column,
+          operator,
+          value: [min?.trim(), max?.trim()],
+        };
+      } else {
+        condition = {
+          column: col.column,
+          operator,
+          value: rawValue,
+        };
+      }
 
-      whereConditions.push(condition);
+      col.criteria = condition;
     }
   }
-
-  props.state.where =
-    whereConditions.length > 0
-      ? {
-          mode: "builder",
-          group: {
-            type: "AND",
-            conditions: whereConditions,
-          } as ConditionGroup,
-        }
-      : null;
 };
 </script>
