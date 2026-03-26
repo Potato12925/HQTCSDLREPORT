@@ -20,13 +20,6 @@
       </button>
     </div>
 
-    <!-- PREVIEW -->
-    <div v-if="preview" class="mt-3 text-sm text-gray-600">
-      <strong>Preview:</strong>
-      <div class="bg-gray-100 p-2 rounded mt-1 font-mono">
-        {{ preview }}
-      </div>
-    </div>
   </div>
 </template>
 
