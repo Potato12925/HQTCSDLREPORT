@@ -3,7 +3,7 @@
     <div v-if="hasTables">
       <SelectBuilder :state="props.queryState" />
       
-      <FromBuilder :state="props.queryState"></FromBuilder>
+      <!-- <FromBuilder :state="props.queryState"></FromBuilder> -->
 
       <WhereBuilder :state="props.queryState" :columns="allColumns" />
 

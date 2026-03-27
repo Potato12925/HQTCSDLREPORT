@@ -52,7 +52,8 @@ const mapToQueryColumn = (table: TableMetadata, column: ColumnMetadata): QueryCo
 const mapForeignKeyToJoin = (foreignKey: ForeignKeyMetadata): Join => {
   return {
     type: "INNER",
-    tableId: foreignKey.referencedObjectId,
+    fromTableId: foreignKey.parentObjectId,
+    toTableId: foreignKey.referencedObjectId,
     on: {
       type: "AND",
       conditions: [
@@ -89,6 +90,24 @@ const buildJoinKey = (fk: ForeignKeyMetadata) => {
     fk.referencedObjectId,
     fk.referencedColumnId,
   ].join("|");
+};
+
+const syncFromByCheckedTable = () => {
+  const checkedTables = tables.value.filter((table) => table.checked);
+
+  if (checkedTables.length !== 1) {
+    delete queryState.value.from;
+    return;
+  }
+
+  const checkedTableId = checkedTables[0].objectId;
+  const selectedTable = queryState.value.tables?.find((table) => table.id === checkedTableId);
+
+  if (selectedTable) {
+    queryState.value.from = [selectedTable];
+  } else {
+    delete queryState.value.from;
+  }
 };
 /* ================================
    JOIN UPDATE (INCREMENTAL)
@@ -241,6 +260,7 @@ const handleToggleColumn = (column: ColumnMetadata, table: TableMetadata) => {
   // chỉ update phần liên quan
   addedTables.forEach(addJoinsForTable);
   removedTables.forEach(removeJoinsForTable);
+  syncFromByCheckedTable();
 };
 /* ================================
    LOAD DB
