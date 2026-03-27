@@ -76,9 +76,10 @@ export interface GroupBy {
 // ===================== JOIN =====================
 
 export interface Join {
-  type: "INNER" | "LEFT" | "RIGHT" | "FULL";
+  type: "INNER" | "LEFT" | "RIGHT" | "FULL"| "CROSS";
   tableId: ID;
   on: ConditionGroup;
+  _meta?:{};
 }
 
 // ===================== TABLE =====================

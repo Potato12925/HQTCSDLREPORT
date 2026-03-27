@@ -1,8 +1,9 @@
 <template>
   <div class="flex-1 p-4 bg-light overflow-y-auto">
-    <h2 class="text-xl font-bold text-dark mb-4">Query Builder</h2>
     <div v-if="hasTables">
       <SelectBuilder :state="props.queryState" />
+<!-- 
+      <FromBuilder :state="props.queryState"></FromBuilder> -->
 
       <WhereBuilder :state="props.queryState" :columns="allColumns" />
 
@@ -25,6 +26,7 @@ import WhereBuilder from "./WhereBuilder.vue";
 import GroupByBuilder from "./GroupByBuilder.vue";
 import OrderByBuilder from "./OrderByBuilder.vue";
 import PaginationControl from "./PaginationControl.vue";
+import FromBuilder from "./FromBuilder.vue";
 
 const props = defineProps<{
   queryState: QueryState;
