@@ -75,13 +75,6 @@ const mapForeignKeyToJoin = (foreignKey: ForeignKeyMetadata): Join => {
   };
 };
 
-const getSelectedTableIds = (tables?: QueryTable[]) => {
-  //nếu không có table thì tạo set
-  if (!tables) return new Set<number>();
-  //tạo set gồm các ID của tables
-  return new Set(tables.map((table) => table.id));
-};
-
 const buildJoinKey = (fk: ForeignKeyMetadata) => {
   return [
     fk.foreignKeyName,
@@ -93,6 +86,9 @@ const buildJoinKey = (fk: ForeignKeyMetadata) => {
 };
 
 function recomputeJoins(selectedTables: QueryTable[], allTables: TableMetadata[]): Join[] {
+  if (selectedTables.length <= 1) {
+    return [];
+  }
   const joins: Join[] = [];
 
   const selectedIds = new Set(selectedTables.map((t) => t.id));
@@ -271,7 +267,7 @@ const handleToggleColumn = (column: ColumnMetadata, table: TableMetadata) => {
 
   const root = findRoot(selectedTables, rawJoins);
   queryState.value.from = root || undefined;
-  
+
   queryState.value.joins = orderedJoins;
 };
 /* ================================
