@@ -4,8 +4,8 @@
 
     <!-- ================= ROOT TABLE ================= -->
     <div v-if="rootTable" class="border rounded-xl p-3 mb-3 bg-blue-50">
-      <div class="flex items-center gap-2">
-        <span class="text-xs text-gray-500">FROM</span>
+      <div class="flex items-center gap-2 text-sm">
+        <span class="text-gray-500">FROM</span>
 
         <span class="font-semibold">
           {{ rootTable.tableName }}
@@ -14,31 +14,17 @@
         <input
           v-model="rootTable.alias"
           placeholder="alias"
-          class="border rounded px-2 py-1 text-sm"
-        />
-      </div>
-    </div>
-
-    <!-- ================= JOIN TABLES ================= -->
-    <div v-for="table in joinTables" :key="table.id" class="border rounded-xl p-3 mb-3 bg-light">
-      <div class="flex items-center gap-2">
-        <span class="font-medium">{{ table.tableName }}</span>
-
-        <input
-          v-model="table.alias"
-          placeholder="alias"
-          class="border rounded px-2 py-1 text-sm"
+          class="border rounded px-2 py-1 text-sm w-24"
         />
       </div>
     </div>
 
     <!-- ================= JOINS ================= -->
-    <div v-if="joins.length" class="mt-5">
-      <h3 class="text-md font-semibold mb-2">Joins</h3>
-
-      <div v-for="(join, jIndex) in joins" :key="jIndex" class="border rounded-xl p-3 mb-3">
-        <!-- JOIN HEADER -->
-        <div class="flex items-center gap-2 mb-2">
+    <div v-if="joins.length" class="mt-4">
+      <div v-for="(join, jIndex) in filteredJoins" :key="jIndex" class="border rounded-xl p-3 mb-3">
+        <!-- SQL STYLE HEADER -->
+        <div class="flex flex-wrap items-center gap-2 text-sm mb-2">
+          <!-- JOIN TYPE -->
           <select v-model="join.type" class="border px-2 py-1 text-sm">
             <option value="INNER">INNER</option>
             <option value="LEFT">LEFT</option>
@@ -47,88 +33,71 @@
             <option value="CROSS">CROSS</option>
           </select>
 
-          <!-- chỉ chọn trong joinTables -->
+          <span class="font-medium">JOIN</span>
+
+          <!-- TABLE -->
           <select v-model="join.toTableId" class="border px-2 py-1 text-sm">
-            <option v-for="t in joinTables" :key="t.id" :value="t.id">
+            <option v-for="t in tables" :key="t.id" :value="t.id">
               {{ t.tableName }}
             </option>
           </select>
+
+          <!-- ALIAS -->
+          <input
+            v-if="getTable(join.toTableId)"
+            v-model="getTable(join.toTableId).alias"
+            placeholder="alias"
+            class="border px-2 py-1 text-sm w-20"
+          />
+
+          <!-- ON -->
+          <span v-if="join.type !== 'CROSS'" class="font-medium">ON</span>
         </div>
 
-        <!-- ================= ON ================= -->
-        <div v-if="join.type !== 'CROSS'" class="ml-2">
-          <div class="text-xs text-gray-500 mb-1">ON</div>
-
+        <!-- ================= CONDITIONS ================= -->
+        <div v-if="join.type !== 'CROSS'" class="ml-4">
           <div
             v-for="(cond, cIndex) in join.on.conditions"
             :key="cIndex"
-            class="flex gap-2 mb-1 items-center"
+            class="flex gap-2 mb-1 items-center text-sm"
           >
             <!-- RAW -->
             <template v-if="'type' in cond && cond.type === 'raw'">
-              <input
-                v-model="cond.sql"
-                placeholder="RAW SQL"
-                class="border px-2 py-1 text-sm flex-1"
-              />
+              <input v-model="cond.sql" placeholder="RAW SQL" class="border px-2 py-1 flex-1" />
             </template>
 
             <!-- NORMAL -->
             <template v-else-if="'column' in cond && typeof cond.column === 'object'">
-              <!-- COLUMN -->
-              <input
-                v-model="cond.column.columnName"
-                placeholder="column"
-                class="border px-2 py-1 text-sm"
-              />
+              <input v-model="cond.column.columnName" class="border px-2 py-1 w-32" />
 
-              <!-- OPERATOR -->
-              <select v-model="cond.operator" class="border px-2 py-1 text-sm">
+              <select v-model="cond.operator" class="border px-2 py-1">
                 <option value="=">=</option>
                 <option value="!=">!=</option>
                 <option value=">">&gt;</option>
                 <option value="<">&lt;</option>
               </select>
 
-              <!-- VALUE -->
-              <input
-                v-model="cond.value.columnName"
-                placeholder="value"
-                class="border px-2 py-1 text-sm"
-              />
+              <input v-model="cond.value.columnName" class="border px-2 py-1 w-32" />
             </template>
 
             <!-- REMOVE -->
-            <button
-              @click="removeCondition(join, cIndex)"
-              class="text-red-500 text-xs"
-            >
-              ✕
-            </button>
+            <button @click="removeCondition(join, cIndex)" class="text-red-500 text-xs">✕</button>
           </div>
 
           <!-- ACTIONS -->
           <div class="flex gap-2 mt-2">
-            <button @click="addCondition(join, 'AND')" class="text-xs text-blue-500">
-              + AND
-            </button>
+            <button @click="addCondition(join, 'AND')" class="text-xs text-blue-500">+ AND</button>
 
-            <button @click="addCondition(join, 'OR')" class="text-xs text-purple-500">
-              + OR
-            </button>
+            <button @click="addCondition(join, 'OR')" class="text-xs text-purple-500">+ OR</button>
 
-            <button @click="addRaw(join)" class="text-xs text-green-500">
-              + RAW
-            </button>
+            <button @click="addRaw(join)" class="text-xs text-green-500">+ RAW</button>
           </div>
         </div>
       </div>
     </div>
 
     <!-- EMPTY -->
-    <div v-if="!rootTable" class="text-gray-400 text-sm">
-      No tables selected
-    </div>
+    <div v-if="!rootTable" class="text-gray-400 text-sm">No tables selected</div>
   </div>
 </template>
 
@@ -140,22 +109,21 @@ const props = defineProps<{
   state: QueryState;
 }>();
 
-// ================= ROOT =================
-
-const rootTable = computed(() => props.state.from ?? null);
-
-// ================= TABLES =================
+// ================= DATA =================
 
 const tables = computed(() => props.state.tables ?? []);
-
 const joins = computed(() => props.state.joins ?? []);
+const rootTable = computed(() => props.state.from ?? null);
+const filteredJoins = computed(() => {
+  if (!rootTable.value) return joins.value;
 
-// ================= JOIN TABLES =================
-
-const joinTables = computed(() => {
-  const joinIds = new Set(joins.value.map(j => j.toTableId));
-  return tables.value.filter(t => joinIds.has(t.id));
+  return joins.value.filter((j) => j.toTableId !== rootTable.value.id);
 });
+// ================= HELPERS =================
+
+const getTable = (id: number) => {
+  return tables.value.find((t) => t.id === id);
+};
 
 // ================= AUTO DEFAULT ON =================
 
@@ -182,9 +150,9 @@ const ensureDefaultCondition = (join: Join) => {
 watch(
   () => joins.value,
   (list) => {
-    list.forEach(j => ensureDefaultCondition(j));
+    list.forEach((j) => ensureDefaultCondition(j));
   },
-  { deep: true, immediate: true }
+  { deep: true, immediate: true },
 );
 
 // ================= ACTIONS =================

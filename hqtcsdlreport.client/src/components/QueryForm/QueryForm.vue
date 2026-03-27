@@ -26,7 +26,7 @@ import WhereBuilder from "./WhereBuilder.vue";
 import GroupByBuilder from "./GroupByBuilder.vue";
 import OrderByBuilder from "./OrderByBuilder.vue";
 import PaginationControl from "./PaginationControl.vue";
-import FromBuilder from "./FromBuilder.vue";
+import FromBuilder from "./FromBuilder/FromBuilder.vue";
 
 const props = defineProps<{
   queryState: QueryState;
