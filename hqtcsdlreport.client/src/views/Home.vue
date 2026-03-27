@@ -96,7 +96,7 @@ const buildJoinKey = (fk: ForeignKeyMetadata) => {
 ================================ */
 const removeCrossForTable = (tableId: number) => {
   if (!queryState.value.joins) return;
-  
+
   queryState.value.joins = queryState.value.joins.filter((j: any) => {
     return !(j.type === "CROSS" && j.tableId === tableId);
   });
@@ -150,7 +150,7 @@ const addJoinsForTable = (tableId: number) => {
   });
 
   //nếu table không có FK với các table nào khác được chọn => CROSS JOIN
-  if (!hasRelation) {
+  if (!hasRelation && selectedTableIds.size > 1) {
     //xác định có tồn tại cross table bắt đầu với CROSS_ hay không
     const exists = queryState.value.joins!.some((j: any) => j._meta?.key === `CROSS_${tableId}`);
     //Nếu không tồn tại thì thêm join mới
