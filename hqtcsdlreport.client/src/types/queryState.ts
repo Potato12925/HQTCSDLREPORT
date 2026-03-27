@@ -76,11 +76,14 @@ export interface GroupBy {
 // ===================== JOIN =====================
 
 export interface Join {
-  type: "INNER" | "LEFT" | "RIGHT" | "FULL"| "CROSS";
-  fromTableId: ID; 
+  type: "INNER" | "LEFT" | "RIGHT" | "FULL" | "CROSS";
+  fromTableId: ID;
   toTableId: ID;
   on: ConditionGroup;
-  _meta?:{};
+  _meta?: {
+    key: string;
+    auto?: boolean;
+  };
 }
 
 // ===================== TABLE =====================
@@ -100,7 +103,8 @@ export interface QueryState {
   distinct?: boolean;
 
   tables?: QueryTable[];
-  from?: QueryTable[];
+
+  from?: QueryTable;
   joins?: Join[];
 
   where?: WhereClause | null;

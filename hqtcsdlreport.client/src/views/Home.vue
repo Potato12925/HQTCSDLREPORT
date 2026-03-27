@@ -92,136 +92,150 @@ const buildJoinKey = (fk: ForeignKeyMetadata) => {
   ].join("|");
 };
 
-const syncFromByCheckedTable = () => {
-  const checkedTables = tables.value.filter((table) => table.checked);
+function recomputeJoins(selectedTables: QueryTable[], allTables: TableMetadata[]): Join[] {
+  const joins: Join[] = [];
 
-  if (checkedTables.length !== 1) {
-    delete queryState.value.from;
-    return;
-  }
+  const selectedIds = new Set(selectedTables.map((t) => t.id));
 
-  const checkedTableId = checkedTables[0].objectId;
-  const selectedTable = queryState.value.tables?.find((table) => table.id === checkedTableId);
+  // map FK theo table
+  const fkMap: ForeignKeyMetadata[] = [];
 
-  if (selectedTable) {
-    queryState.value.from = [selectedTable];
-  } else {
-    delete queryState.value.from;
-  }
-};
-/* ================================
-   JOIN UPDATE (INCREMENTAL)
-================================ */
-const removeCrossForTable = (tableId: number) => {
-  if (!queryState.value.joins) return;
-
-  queryState.value.joins = queryState.value.joins.filter((j: any) => {
-    return !(j.type === "CROSS" && j.tableId === tableId);
-  });
-};
-// ADD joins khi table được thêm
-const addJoinsForTable = (tableId: number) => {
-  //không có table thì bỏ qua
-  if (!queryState.value.tables) return;
-  //không có joins thì tạo mảng join
-  if (!queryState.value.joins) {
-    queryState.value.joins = [];
-  }
-  //lấy ra tableID có checked là true
-  const selectedTableIds = getSelectedTableIds(queryState.value.tables);
-
-  let hasRelation = false;
-  //loop mỗi table
-  tables.value.forEach((table) => {
+  allTables.forEach((table) => {
     table.foreignKeys.forEach((fk) => {
-      //kiểm tra xem table có relationship ở parentobj hay refobj trong tables chung hay không
-      const isRelated = fk.parentObjectId === tableId || fk.referencedObjectId === tableId;
-
-      if (!isRelated) return;
-      //kiểm tra xem trong các table được chọn có cặp table relationship hay không
-      const canJoin =
-        selectedTableIds.has(fk.parentObjectId) && selectedTableIds.has(fk.referencedObjectId);
-
-      if (!canJoin) return;
-
-      hasRelation = true;
-      //tạo key unique cho cặp khóa ngoại của 2
-      const key = buildJoinKey(fk);
-      // Kiểm tra xem trong _meta chứa key có tồn tại hay chưa
-      const exists = queryState.value.joins!.some((j: any) => j._meta?.key === key);
-
-      if (!exists) {
-        //tạo format ForeignKeyMetadata cho join
-        const join = mapForeignKeyToJoin(fk);
-        // thêm _meta chứa key cho join đó
-        (join as any)._meta = {
-          key,
-          //xác định join này do hệ thống tự tạo
-          auto: true,
-        };
-        // remove cross join của 2 table nếu có
-        removeCrossForTable(fk.parentObjectId);
-        removeCrossForTable(fk.referencedObjectId);
-        queryState.value.joins!.push(join);
+      if (selectedIds.has(fk.parentObjectId) && selectedIds.has(fk.referencedObjectId)) {
+        fkMap.push(fk);
       }
     });
   });
 
-  //nếu table không có FK với các table nào khác được chọn => CROSS JOIN
-  if (!hasRelation && selectedTableIds.size > 1) {
-    //xác định có tồn tại cross table bắt đầu với CROSS_ hay không
-    const exists = queryState.value.joins!.some((j: any) => j._meta?.key === `CROSS_${tableId}`);
-    //Nếu không tồn tại thì thêm join mới
-    if (!exists) {
-      queryState.value.joins!.push({
+  const usedTable = new Set<number>();
+
+  // ================= INNER JOIN =================
+  fkMap.forEach((fk) => {
+    const join = mapForeignKeyToJoin(fk);
+
+    joins.push({
+      ...join,
+      _meta: {
+        key: buildJoinKey(fk),
+        auto: true,
+      },
+    });
+
+    usedTable.add(fk.parentObjectId);
+    usedTable.add(fk.referencedObjectId);
+  });
+
+  // ================= CROSS JOIN =================
+  selectedTables.forEach((table) => {
+    if (!usedTable.has(table.id)) {
+      joins.push({
         type: "CROSS",
-        tableId,
+        fromTableId: table.id,
+        toTableId: table.id,
         on: {
           type: "AND",
           conditions: [],
         },
         _meta: {
-          key: `CROSS_${tableId}`,
+          key: `CROSS_${table.id}`,
           auto: true,
         },
-      } as any);
+      });
+    }
+  });
+
+  return joins;
+}
+function buildGraph(joins: Join[]) {
+  const graph = new Map<number, number[]>();
+
+  joins.forEach((j) => {
+    if (j.type === "CROSS") return;
+
+    if (!graph.has(j.fromTableId)) graph.set(j.fromTableId, []);
+    if (!graph.has(j.toTableId)) graph.set(j.toTableId, []);
+
+    graph.get(j.fromTableId)!.push(j.toTableId);
+    graph.get(j.toTableId)!.push(j.fromTableId);
+  });
+
+  return graph;
+}
+function findRoot(tables: QueryTable[], joins: Join[]): QueryTable {
+  const joinedTables = joins.filter((join) => join.type !== "CROSS").map((join) => join.toTableId);
+
+  const toSet = new Set(joinedTables);
+
+  for (const table of tables) {
+    if (!toSet.has(table.id)) {
+      return table;
     }
   }
-};
 
-const removeJoinsForTable = (tableId: number) => {
-  if (!queryState.value.joins) return;
+  return tables[0];
+}
+function traverseAll(graph: Map<number, number[]>, tables: QueryTable[]) {
+  const visited = new Set<number>();
+  const order: number[] = [];
 
-  queryState.value.joins = queryState.value.joins.filter((join: any) => {
-    const key = join._meta?.key || "";
+  function dfs(id: number) {
+    if (visited.has(id)) return;
 
-    // loại bỏ ngay CROSS JOIN
-    if (join.type === "CROSS") return false;
+    visited.add(id);
+    order.push(id);
 
-    // loại bỏ join có liên quan tới table bị xoá
-    if (key.includes(`|${tableId}|`)) return false;
+    const children = graph.get(id) ?? [];
+    for (const next of children) {
+      dfs(next);
+    }
+  }
 
-    // giữ lại các join còn lại
-    return true;
-  });
-};
+  for (const table of tables) {
+    dfs(table.id);
+  }
 
+  return order;
+}
+function orderJoins(joins: Join[], tables: QueryTable[]) {
+  const innerJoins = joins.filter((j) => j.type !== "CROSS");
+  const crossJoins = joins.filter((j) => j.type === "CROSS");
+
+  const graph = buildGraph(innerJoins);
+
+  const order = traverseAll(graph, tables);
+
+  const ordered: Join[] = [];
+  const used = new Set<string>();
+
+  for (const tableId of order) {
+    const matches = innerJoins.filter((j) => j.fromTableId === tableId || j.toTableId === tableId);
+
+    for (const j of matches) {
+      const key = j._meta?.key ?? `${j.fromTableId}-${j.toTableId}`;
+
+      if (!used.has(key)) {
+        ordered.push(j);
+        used.add(key);
+      }
+    }
+  }
+
+  return [...ordered, ...crossJoins];
+}
 /* ================================
    CORE: UPDATE STATE
 ================================ */
-
 const handleToggleColumn = (column: ColumnMetadata, table: TableMetadata) => {
-  //lấy table trước khi thay đổi
-  const before = getSelectedTableIds(queryState.value.tables);
-  // không có tables thì tạo mới
   if (!queryState.value.tables) {
     queryState.value.tables = [];
   }
 
   const queryTables = queryState.value.tables;
   const tableId = table.objectId;
-  // nếu tableid chưa tồn tại thì thêm vào mảng
+
   let queryTable = queryTables.find((t) => t.id === tableId);
+
   if (!queryTable) {
     queryTable = {
       id: tableId,
@@ -232,16 +246,13 @@ const handleToggleColumn = (column: ColumnMetadata, table: TableMetadata) => {
     queryTables.push(queryTable);
   }
 
-  //xác định xem column đã tồn tại trong queryTable.columns chưa
   const existingIndex = queryTable.columns.findIndex((c) => c.column.columnId === column.columnId);
 
   if (column.checked) {
-    //nếu được checked mà chưa tồn tại thì tạo mới
     if (existingIndex === -1) {
       queryTable.columns.push(mapToQueryColumn(table, column));
     }
   } else {
-    //nếu checked = false mà tồn tại thì bỏ
     if (existingIndex !== -1) {
       queryTable.columns.splice(existingIndex, 1);
     }
@@ -251,16 +262,17 @@ const handleToggleColumn = (column: ColumnMetadata, table: TableMetadata) => {
   if (queryTable.columns.length === 0) {
     queryState.value.tables = queryTables.filter((t) => t.id !== tableId);
   }
-  //xác định table id sau khi thay đổi
-  const after = getSelectedTableIds(queryState.value.tables);
 
-  const addedTables = Array.from(after).filter((id) => !before.has(id));
-  const removedTables = Array.from(before).filter((id) => !after.has(id));
+  const selectedTables = queryState.value.tables ?? [];
 
-  // chỉ update phần liên quan
-  addedTables.forEach(addJoinsForTable);
-  removedTables.forEach(removeJoinsForTable);
-  syncFromByCheckedTable();
+  const rawJoins = recomputeJoins(selectedTables, tables.value);
+
+  const orderedJoins = orderJoins(rawJoins, selectedTables);
+
+  const root = findRoot(selectedTables, rawJoins);
+  queryState.value.from = root || undefined;
+  
+  queryState.value.joins = orderedJoins;
 };
 /* ================================
    LOAD DB
