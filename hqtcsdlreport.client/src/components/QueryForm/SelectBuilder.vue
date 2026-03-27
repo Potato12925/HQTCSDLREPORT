@@ -81,8 +81,7 @@ const props = defineProps<{
    TABLES
 ======================== */
 const tables = computed<QueryTable[]>(() => {
-  if (!props.state.tables) return [];
-  return Object.values(props.state.tables);
+  return props.state.tables ?? [];
 });
 
 /* ========================

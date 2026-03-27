@@ -137,9 +137,7 @@ const props = defineProps<{
 
 // ================= TABLES =================
 
-const tables = computed(() =>
-  props.state.tables ? Object.values(props.state.tables) : []
-);
+const tables = computed(() => props.state.tables ?? []);
 
 // ================= ROOT TABLE =================
 
@@ -191,16 +189,16 @@ const addTable = () => {
   };
 
   if (!props.state.tables) {
-    props.state.tables = {};
+    props.state.tables = [];
   }
 
-  props.state.tables[id] = newTable;
+  props.state.tables.push(newTable);
   newTableName.value = "";
 };
 
 const removeTable = (id: number) => {
   if (!props.state.tables) return;
-  delete props.state.tables[id];
+  props.state.tables = props.state.tables.filter((t) => t.id !== id);
 
   // remove joins liên quan
   if (props.state.joins) {

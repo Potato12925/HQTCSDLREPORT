@@ -98,7 +98,7 @@ export interface QueryTable {
 export interface QueryState {
   distinct?: boolean;
 
-  tables?: Record<ID, QueryTable>;
+  tables?: QueryTable[];
 
   joins?: Join[];
 

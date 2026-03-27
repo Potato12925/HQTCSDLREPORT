@@ -74,12 +74,11 @@ const mapForeignKeyToJoin = (foreignKey: ForeignKeyMetadata): Join => {
   };
 };
 
-const getSelectedTableIds = (tables?: Record<number, QueryTable>) => {
+const getSelectedTableIds = (tables?: QueryTable[]) => {
   //nếu không có table thì tạo set
   if (!tables) return new Set<number>();
-  //tables có dạng Record<ID, QueryTable>, với ID là objectID của table
   //tạo set gồm các ID của tables
-  return new Set(Object.keys(tables).map((id) => Number(id)));
+  return new Set(tables.map((table) => table.id));
 };
 
 const buildJoinKey = (fk: ForeignKeyMetadata) => {
@@ -195,24 +194,26 @@ const removeJoinsForTable = (tableId: number) => {
 const handleToggleColumn = (column: ColumnMetadata, table: TableMetadata) => {
   //lấy table trước khi thay đổi
   const before = getSelectedTableIds(queryState.value.tables);
-  // không có tales thì tạo mới
+  // không có tables thì tạo mới
   if (!queryState.value.tables) {
-    queryState.value.tables = {};
+    queryState.value.tables = [];
   }
 
+  const queryTables = queryState.value.tables;
   const tableId = table.objectId;
-  // nếu tableid chưa tồn tại thì thêm vào dict
-  if (!queryState.value.tables[tableId]) {
-    queryState.value.tables[tableId] = {
+  // nếu tableid chưa tồn tại thì thêm vào mảng
+  let queryTable = queryTables.find((t) => t.id === tableId);
+  if (!queryTable) {
+    queryTable = {
       id: tableId,
       tableName: table.tableName,
       alias: null,
       columns: [],
     };
+    queryTables.push(queryTable);
   }
 
-  const queryTable = queryState.value.tables[tableId];
-  //xác định xem column đã tồn tại trong queryState.value.tables[tableId].columns chưa
+  //xác định xem column đã tồn tại trong queryTable.columns chưa
   const existingIndex = queryTable.columns.findIndex((c) => c.column.columnId === column.columnId);
 
   if (column.checked) {
@@ -229,7 +230,7 @@ const handleToggleColumn = (column: ColumnMetadata, table: TableMetadata) => {
 
   // remove table nếu không còn column
   if (queryTable.columns.length === 0) {
-    delete queryState.value.tables[tableId];
+    queryState.value.tables = queryTables.filter((t) => t.id !== tableId);
   }
   //xác định table id sau khi thay đổi
   const after = getSelectedTableIds(queryState.value.tables);
