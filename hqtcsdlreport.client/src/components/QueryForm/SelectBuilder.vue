@@ -1,11 +1,18 @@
 <template>
   <div class="mb-6">
-    <h3 class="font-semibold text-primary mb-2">SELECT</h3>
+    <!-- HEADER -->
+    <h3 class="font-semibold text-primary mb-3 text-lg tracking-wide">SELECT</h3>
+
     <DistinctToggle :state="state" />
 
-    <div v-for="table in tables" :key="table.id" class="mb-4">
+    <!-- TABLE LIST -->
+    <div
+      v-for="table in tables"
+      :key="table.id"
+      class="mb-4 p-4 rounded-xl bg-white shadow-sm border border-primary/10"
+    >
       <!-- TABLE NAME -->
-      <div class="font-medium text-dark mb-1">
+      <div class="font-semibold text-dark mb-3 text-base">
         {{ table.tableName }}
       </div>
 
@@ -13,15 +20,18 @@
       <div
         v-for="col in table.columns"
         :key="col.column.columnId"
-        class="flex gap-2 items-center mb-1 flex-wrap"
+        class="flex gap-2 items-center mb-2 flex-wrap p-2 rounded-lg transition hover:bg-primary/5"
       >
         <!-- COLUMN NAME -->
-        <span class="w-40 text-sm text-dark">
+        <span class="w-40 text-sm text-dark font-medium">
           {{ col.column.columnName }}
         </span>
 
         <!-- AGGREGATE -->
-        <select v-model="col.aggregate" class="border px-2 py-1 rounded bg-white text-sm">
+        <select
+          v-model="col.aggregate"
+          class="border border-primary/20 px-2 py-1 rounded bg-light text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+        >
           <option :value="null">None</option>
           <option>COUNT</option>
           <option>SUM</option>
@@ -34,13 +44,13 @@
         <input
           v-model="col.alias"
           placeholder="alias"
-          class="border px-2 py-1 rounded bg-white text-sm"
+          class="border border-primary/20 px-2 py-1 rounded bg-light text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
         />
 
-        <!-- CRITERIA -->
+        <!-- OPERATOR -->
         <select
           :value="criteriaOperatorMap[getCriteriaKey(col)] ?? '='"
-          class="border px-2 py-1 rounded bg-white text-sm"
+          class="border border-primary/20 px-2 py-1 rounded bg-light text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
           @change="onOperatorChange(col, $event)"
         >
           <option v-for="op in operatorOptions" :key="op" :value="op">
@@ -48,10 +58,16 @@
           </option>
         </select>
 
+        <!-- VALUE -->
         <input
           v-model="criteriaValueMap[getCriteriaKey(col)]"
           placeholder="value"
-          class="border px-2 py-1 rounded bg-white text-sm"
+          class="border px-2 py-1 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+          :class="
+            criteriaValueMap[getCriteriaKey(col)]
+              ? 'bg-primary/10 border-primary'
+              : 'bg-light border-primary/20'
+          "
           @input="updateCriteria"
         />
       </div>
@@ -61,13 +77,7 @@
 
 <script setup lang="ts">
 import { computed, reactive } from "vue";
-import type {
-  QueryState,
-  QueryTable,
-  QueryColumn,
-  Condition,
-  Operator,
-} from "@/types/queryState";
+import type { QueryState, QueryTable, QueryColumn, Condition, Operator } from "@/types/queryState";
 import DistinctToggle from "./DistinctToggle.vue";
 
 /* ========================
@@ -87,20 +97,30 @@ const tables = computed<QueryTable[]>(() => {
 /* ========================
    CRITERIA MAP (UI STATE)
 ======================== */
-const operatorOptions: Operator[] = ["=", "!=", ">", "<", ">=", "<=", "LIKE"];
+const operatorOptions: Operator[] = [
+  "=",
+  "!=",
+  ">",
+  "<",
+  ">=",
+  "<=",
+  "LIKE",
+  "IN",
+  "BETWEEN",
+  "IS NULL",
+  "IS NOT NULL",
+];
 
 const criteriaOperatorMap = reactive<Record<string, Operator>>({});
 const criteriaValueMap = reactive<Record<string, string>>({});
 
-const getCriteriaKey = (col: QueryColumn) =>
-  `${col.column.tableId}-${col.column.columnId}`;
+const getCriteriaKey = (col: QueryColumn) => `${col.column.tableId}-${col.column.columnId}`;
 
 /* ========================
    HANDLERS
 ======================== */
 const onOperatorChange = (col: QueryColumn, event: Event) => {
-  criteriaOperatorMap[getCriteriaKey(col)] =
-    (event.target as HTMLSelectElement).value as Operator;
+  criteriaOperatorMap[getCriteriaKey(col)] = (event.target as HTMLSelectElement).value as Operator;
 
   updateCriteria();
 };
@@ -109,7 +129,6 @@ const onOperatorChange = (col: QueryColumn, event: Event) => {
    UPDATE CRITERIA
 ======================== */
 const updateCriteria = () => {
-
   for (const table of tables.value) {
     for (const col of table.columns) {
       const key = getCriteriaKey(col);
@@ -117,7 +136,7 @@ const updateCriteria = () => {
       const rawValue = (criteriaValueMap[key] ?? "").trim();
 
       // ❌ Không có value → clear
-      if (!rawValue) {
+      if (!rawValue && operator !== "IS NULL" && operator !== "IS NOT NULL") {
         col.criteria = null;
         continue;
       }
@@ -156,3 +175,11 @@ const updateCriteria = () => {
   }
 };
 </script>
+
+<style scoped>
+/* Optional: smooth UI feel */
+select,
+input {
+  transition: all 0.15s ease;
+}
+</style>
