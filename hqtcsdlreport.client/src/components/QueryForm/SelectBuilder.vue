@@ -47,38 +47,38 @@
           class="border border-primary/20 px-2 py-1 rounded bg-light text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
         />
 
-        <!-- OPERATOR -->
-        <select
-          :value="criteriaOperatorMap[getCriteriaKey(col)] ?? '='"
-          class="border border-primary/20 px-2 py-1 rounded bg-light text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-          @change="onOperatorChange(col, $event)"
-        >
-          <option v-for="op in operatorOptions" :key="op" :value="op">
-            {{ op }}
-          </option>
-        </select>
+        <!-- ✅ CONDITION ITEM -->
+        <div class="flex items-center gap-2">
+          <!-- nếu chưa có criteria -->
+          <button
+            v-if="!col.criteria"
+            @click="initCriteria(col)"
+            class="text-xs px-2 py-1 bg-primary text-white rounded"
+          >
+            + Filter
+          </button>
 
-        <!-- VALUE -->
-        <input
-          v-model="criteriaValueMap[getCriteriaKey(col)]"
-          placeholder="value"
-          class="border px-2 py-1 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-          :class="
-            criteriaValueMap[getCriteriaKey(col)]
-              ? 'bg-primary/10 border-primary'
-              : 'bg-light border-primary/20'
-          "
-          @input="updateCriteria"
-        />
+          <!-- nếu có criteria -->
+          <ConditionItem
+            v-else
+            v-model="col.criteria"
+            :tables="tables"
+            :fixedColumn="col.column"
+            :hideColumn="true"
+            @remove="clearCriteria(col)"
+          />
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, reactive } from "vue";
-import type { QueryState, QueryTable, QueryColumn, Condition, Operator } from "@/types/queryState";
+import { computed } from "vue";
+import type { QueryState, QueryTable, QueryColumn, Condition } from "@/types/queryState";
+
 import DistinctToggle from "./DistinctToggle.vue";
+import ConditionItem from "../Condition/ConditionItem.vue";
 
 /* ========================
    PROPS
@@ -95,89 +95,22 @@ const tables = computed<QueryTable[]>(() => {
 });
 
 /* ========================
-   CRITERIA MAP (UI STATE)
-======================== */
-const operatorOptions: Operator[] = [
-  "=",
-  "!=",
-  ">",
-  "<",
-  ">=",
-  "<=",
-  "LIKE",
-  "IN",
-  "BETWEEN",
-  "IS NULL",
-  "IS NOT NULL",
-];
-
-const criteriaOperatorMap = reactive<Record<string, Operator>>({});
-const criteriaValueMap = reactive<Record<string, string>>({});
-
-const getCriteriaKey = (col: QueryColumn) => `${col.column.tableId}-${col.column.columnId}`;
-
-/* ========================
    HANDLERS
 ======================== */
-const onOperatorChange = (col: QueryColumn, event: Event) => {
-  criteriaOperatorMap[getCriteriaKey(col)] = (event.target as HTMLSelectElement).value as Operator;
+function initCriteria(col: QueryColumn) {
+  col.criteria = {
+    column: col.column,
+    operator: "=",
+    value: "",
+  };
+}
 
-  updateCriteria();
-};
-
-/* ========================
-   UPDATE CRITERIA
-======================== */
-const updateCriteria = () => {
-  for (const table of tables.value) {
-    for (const col of table.columns) {
-      const key = getCriteriaKey(col);
-      const operator = criteriaOperatorMap[key] ?? "=";
-      const rawValue = (criteriaValueMap[key] ?? "").trim();
-
-      // ❌ Không có value → clear
-      if (!rawValue && operator !== "IS NULL" && operator !== "IS NOT NULL") {
-        col.criteria = null;
-        continue;
-      }
-
-      let condition: Condition;
-
-      // ✅ Handle special operators
-      if (operator === "IS NULL" || operator === "IS NOT NULL") {
-        condition = {
-          column: col.column,
-          operator,
-        };
-      } else if (operator === "IN") {
-        condition = {
-          column: col.column,
-          operator,
-          value: rawValue.split(",").map((v) => v.trim()),
-        };
-      } else if (operator === "BETWEEN") {
-        const [min, max] = rawValue.split(",");
-        condition = {
-          column: col.column,
-          operator,
-          value: [min?.trim(), max?.trim()],
-        };
-      } else {
-        condition = {
-          column: col.column,
-          operator,
-          value: rawValue,
-        };
-      }
-
-      col.criteria = condition;
-    }
-  }
-};
+function clearCriteria(col: QueryColumn) {
+  col.criteria = null;
+}
 </script>
 
 <style scoped>
-/* Optional: smooth UI feel */
 select,
 input {
   transition: all 0.15s ease;

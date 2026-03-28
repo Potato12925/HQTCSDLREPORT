@@ -1,5 +1,5 @@
 <template>
-  <div v-if="table" class=" p-3 mb-3">
+  <div v-if="table" class=" p-3">
     <div class="flex items-center gap-2 text-sm">
       <h2 class="text-lg font-semibold">FROM</h2>
       <span class="font-semibold">{{ table.tableName }}</span>
