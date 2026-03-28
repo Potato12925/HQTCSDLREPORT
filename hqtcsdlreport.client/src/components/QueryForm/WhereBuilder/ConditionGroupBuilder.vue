@@ -11,13 +11,7 @@
         </select>
       </div>
 
-      <button
-        v-if="removable"
-        @click="$emit('remove')"
-        class="text-red-500 text-sm"
-      >
-        ✕
-      </button>
+      <button v-if="removable" @click="$emit('remove')" class="text-red-500 text-sm">✕</button>
     </div>
 
     <!-- CONDITIONS -->
@@ -31,7 +25,7 @@
         <ConditionItem
           v-if="isCondition(cond)"
           v-model="model.conditions[index] as Condition"
-          :column-names="columnNames"
+          :columns="columns"
           @remove="removeCondition(index)"
         />
 
@@ -46,7 +40,7 @@
         <ConditionGroupBuilder
           v-else
           v-model="model.conditions[index] as ConditionGroup"
-          :column-names="columnNames"
+          :columns="columns"
           removable
           @remove="removeCondition(index)"
         />
@@ -68,17 +62,22 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
-import type { Condition, ConditionGroup, RawCondition } from "@/types/queryState";
+import type { Condition, ConditionGroup, RawCondition, ColumnRef } from "@/types/queryState";
 
 import ConditionItem from "./ConditionItem.vue";
 import RawConditionItem from "./RawConditionItem.vue";
-import ConditionGroupBuilder from "./ConditionGroupBuilder.vue";
+
+/* ================= TYPES ================= */
+
+type SelectableColumn = ColumnRef & {
+  label: string;
+};
 
 /* ================= PROPS ================= */
 
-defineProps<{
+const props = defineProps<{
   removable?: boolean;
-  columnNames?: string[];
+  columns: SelectableColumn[];
 }>();
 
 defineEmits(["remove"]);
@@ -111,7 +110,7 @@ function isCondition(cond: any): cond is Condition {
 
 function createCondition(): Condition {
   return {
-    column: "",
+    column: {} as ColumnRef,
     operator: "=",
     value: "",
   };
@@ -134,22 +133,18 @@ function createGroup(): ConditionGroup {
 /* ================= ACTIONS ================= */
 
 function addCondition() {
-  const list = [...model.value.conditions];
+  model.value.conditions.push(createCondition());
+}
 
-  if (newType.value === "condition") {
-    list.push(createCondition());
-  } else if (newType.value === "group") {
-    list.push(createGroup());
-  } else {
-    list.push(createRaw());
-  }
+function addRaw() {
+  model.value.conditions.push(createRaw());
+}
 
-  model.value.conditions = list;
+function addGroup() {
+  model.value.conditions.push(createGroup());
 }
 
 function removeCondition(index: number) {
-  const list = [...model.value.conditions];
-  list.splice(index, 1);
-  model.value.conditions = list;
+  model.value.conditions.splice(index, 1);
 }
 </script>
