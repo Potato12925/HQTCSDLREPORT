@@ -21,7 +21,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { QueryState, ColumnRef } from "@/types/queryState";
-import SelectBuilder from "./SelectBuilder.vue";
+import SelectBuilder from "@/components/QueryForm/SelectBuilder/SelectBuilder.vue";
 import WhereBuilder from "./WhereBuilder.vue";
 import GroupByBuilder from "./GroupByBuilder.vue";
 import OrderByBuilder from "./OrderByBuilder.vue";

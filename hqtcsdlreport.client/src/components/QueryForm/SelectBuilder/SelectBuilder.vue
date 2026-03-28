@@ -82,8 +82,8 @@
 import { computed } from "vue";
 import type { QueryState, QueryTable, QueryColumn } from "@/types/queryState";
 
-import DistinctToggle from "./DistinctToggle.vue";
-import ConditionItem from "../Condition/ConditionItem.vue";
+import DistinctToggle from "@/components/QueryForm/DistinctToggle.vue";
+import ConditionItem from "@/components/QueryForm/SelectBuilder/ConditionItem.vue";
 
 /* ========================
    PROPS
