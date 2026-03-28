@@ -5,13 +5,29 @@
       :key="i"
       :cond="cond"
       :tables="tables"
+      :is-first="i === 0"
       @remove="remove(i)"
     />
 
-    <div class="flex gap-2 mt-2">
-      <button @click="add('AND')" class="text-xs text-blue-500">+ AND</button>
-      <button @click="add('OR')" class="text-xs text-purple-500">+ OR</button>
-      <button @click="addRaw" class="text-xs text-green-500">+ RAW</button>
+    <div class="flex gap-2 mt-3 flex-wrap">
+      <button
+        @click="add('AND')"
+        class="px-3 py-1.5 text-xs font-medium rounded-full bg-primary/10 text-primary border border-primary/20 hover:bg-primary hover:text-white transition shadow-sm"
+      >
+        + AND
+      </button>
+      <button
+        @click="add('OR')"
+        class="px-3 py-1.5 text-xs font-medium rounded-full bg-primary/10 text-primary border border-primary/20 hover:bg-primary hover:text-white transition shadow-sm"
+      >
+        + OR
+      </button>
+      <button
+        @click="addRaw"
+        class="px-3 py-1.5 text-xs font-medium rounded-full bg-primary/10 text-primary border border-primary/20 hover:bg-primary hover:text-white transition shadow-sm"
+      >
+        + RAW
+      </button>
     </div>
   </div>
 </template>
@@ -43,6 +59,7 @@ const addRaw = () => {
 };
 
 const remove = (i: number) => {
+  if (i === 0 ) return;
   props.join.on.conditions.splice(i, 1);
 };
 </script>

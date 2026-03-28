@@ -2,16 +2,25 @@
   <div class="flex gap-2 mb-1 items-center text-sm">
     <!-- ================= RAW ================= -->
     <template v-if="isRaw(cond)">
-      <input v-model="cond.sql" class="border px-2 py-1 flex-1" />
+      <input
+        v-model="cond.sql"
+        class="border border-primary/20 px-2 py-1 rounded bg-light text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 flex-1"
+      />
     </template>
 
     <!-- ================= NORMAL ================= -->
     <template v-else-if="isCondition(cond)">
       <!-- COLUMN -->
-      <input v-model="columnDisplay" class="border px-2 py-1 w-40" />
+      <input
+        v-model="columnDisplay"
+        class="border border-primary/20 px-2 py-1 rounded bg-light text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 w-40"
+      />
 
       <!-- OPERATOR -->
-      <select v-model="cond.operator" class="border px-2 py-1">
+      <select
+        v-model="cond.operator"
+        class="border border-primary/20 px-2 py-1 rounded bg-light text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+      >
         <option v-for="op in operators" :key="op" :value="op">
           {{ op }}
         </option>
@@ -20,24 +29,35 @@
       <!-- ================= VALUE ================= -->
 
       <!-- NO VALUE -->
-      <template v-if="noValueOperators.includes(cond.operator)">
-      </template>
+      <template v-if="noValueOperators.includes(cond.operator)"> </template>
 
       <!-- BETWEEN -->
       <template v-else-if="cond.operator === 'BETWEEN'">
-        <input v-model="betweenValue[0]" class="border px-2 py-1 w-20" />
+        <input
+          v-model="betweenValue[0]"
+          class="border border-primary/20 px-2 py-1 rounded bg-light text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 w-20"
+        />
         <span>AND</span>
-        <input v-model="betweenValue[1]" class="border px-2 py-1 w-20" />
+        <input
+          v-model="betweenValue[1]"
+          class="border border-primary/20 px-2 py-1 rounded bg-light text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 w-20"
+        />
       </template>
 
       <!-- IN -->
       <template v-else-if="cond.operator === 'IN'">
-        <input v-model="inValue" class="border px-2 py-1 w-40" />
+        <input
+          v-model="inValue"
+          class="border border-primary/20 px-2 py-1 rounded bg-light text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 w-40"
+        />
       </template>
 
       <!-- DEFAULT -->
       <template v-else>
-        <input v-model="valueDisplay" class="border px-2 py-1 w-40" />
+        <input
+          v-model="valueDisplay"
+          class="border border-primary/20 px-2 py-1 rounded bg-light text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 w-40"
+        />
       </template>
     </template>
 
@@ -47,14 +67,12 @@
     </template>
 
     <!-- REMOVE -->
-    <button @click="$emit('remove')" class="text-red-500 text-xs">
-      ✕
-    </button>
+    <button v-if="!props.isFirst" @click="$emit('remove')" class="text-red-500 text-xs">✕</button>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, watch } from "vue";
+import { computed, onMounted, watch } from "vue";
 import type {
   Condition,
   RawCondition,
@@ -66,6 +84,7 @@ import type {
 const props = defineProps<{
   cond: Condition | RawCondition | ConditionGroup;
   tables: QueryTable[];
+  isFirst: boolean;
 }>();
 
 defineEmits(["remove"]);
@@ -226,6 +245,9 @@ watch(
         props.cond.value = "";
       }
     }
-  }
+  },
 );
+onMounted(() => {
+  console.log(props.isFirst);
+});
 </script>

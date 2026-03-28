@@ -49,7 +49,6 @@ namespace HQTCSDL.Controllers
             };
 
             string connectionString = builder.ConnectionString;
-
             if (!_metadataService.TestConnection(connectionString))
             {
                 return BadRequest(new { message = "Kết nối thất bại" });
