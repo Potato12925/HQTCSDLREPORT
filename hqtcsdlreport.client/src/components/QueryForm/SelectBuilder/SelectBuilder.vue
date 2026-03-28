@@ -64,7 +64,7 @@
           </button>
 
           <!-- nếu có criteria -->
-          <ConditionItem
+          <Criteria
             v-else
             v-model="col.criteria"
             :tables="tables"
@@ -83,7 +83,7 @@ import { computed } from "vue";
 import type { QueryState, QueryTable, QueryColumn } from "@/types/queryState";
 
 import DistinctToggle from "@/components/QueryForm/DistinctToggle.vue";
-import ConditionItem from "@/components/QueryForm/SelectBuilder/ConditionItem.vue";
+import Criteria from "@/components/QueryForm/SelectBuilder/Criteria.vue";
 
 /* ========================
    PROPS
