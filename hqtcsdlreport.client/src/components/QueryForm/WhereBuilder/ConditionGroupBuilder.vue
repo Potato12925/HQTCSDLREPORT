@@ -31,6 +31,7 @@
         <ConditionItem
           v-if="isCondition(cond)"
           v-model="model.conditions[index] as Condition"
+          :column-names="columnNames"
           @remove="removeCondition(index)"
         />
 
@@ -45,6 +46,7 @@
         <ConditionGroupBuilder
           v-else
           v-model="model.conditions[index] as ConditionGroup"
+          :column-names="columnNames"
           removable
           @remove="removeCondition(index)"
         />
@@ -76,6 +78,7 @@ import ConditionGroupBuilder from "./ConditionGroupBuilder.vue";
 
 defineProps<{
   removable?: boolean;
+  columnNames?: string[];
 }>();
 
 defineEmits(["remove"]);

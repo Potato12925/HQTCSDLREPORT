@@ -5,7 +5,7 @@
       
       <FromBuilder :state="props.queryState"></FromBuilder>
 
-      <WhereBuilder :state="props.queryState" :columns="allColumns" />
+      <WhereBuilder :state="props.queryState" />
 
       <GroupByBuilder :state="props.queryState" :columns="allColumns" />
 
@@ -22,7 +22,7 @@
 import { computed } from "vue";
 import type { QueryState, ColumnRef } from "@/types/queryState";
 import SelectBuilder from "@/components/QueryForm/SelectBuilder/SelectBuilder.vue";
-import WhereBuilder from "./FromBuilder/WhereBuilder/WhereBuilder.vue";
+import WhereBuilder from "@/components/QueryForm/WhereBuilder/WhereBuilder.vue";
 import GroupByBuilder from "./GroupByBuilder.vue";
 import OrderByBuilder from "./OrderByBuilder.vue";
 import PaginationControl from "./PaginationControl.vue";
