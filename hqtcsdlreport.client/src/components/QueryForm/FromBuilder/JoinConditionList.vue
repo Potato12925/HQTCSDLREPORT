@@ -9,7 +9,7 @@
       @remove="remove(i)"
     />
 
-    <div class="flex gap-2 mt-3 flex-wrap">
+    <!-- <div class="flex gap-2 mt-3 flex-wrap">
       <button
         @click="add('AND')"
         class="px-3 py-1.5 text-xs font-medium rounded-full bg-primary/10 text-primary border border-primary/20 hover:bg-primary hover:text-white transition shadow-sm"
@@ -28,7 +28,7 @@
       >
         + RAW
       </button>
-    </div>
+    </div> -->
   </div>
 </template>
 
@@ -41,22 +41,22 @@ const props = defineProps<{
   tables: QueryTable[];
 }>();
 
-const add = (type: "AND" | "OR") => {
-  props.join.on.conditions.push({
-    column: { tableId: 0, columnId: 0, columnName: "" },
-    operator: "=" as Operator,
-    value: { tableId: 0, columnId: 0, columnName: "" },
-  });
+// const add = (type: "AND" | "OR") => {
+//   props.join.on.conditions.push({
+//     column: { tableId: 0, columnId: 0, columnName: "" },
+//     operator: "=" as Operator,
+//     value: { tableId: 0, columnId: 0, columnName: "" },
+//   });
 
-  props.join.on.type = type;
-};
+//   props.join.on.type = type;
+// };
 
-const addRaw = () => {
-  props.join.on.conditions.push({
-    type: "raw",
-    sql: "",
-  });
-};
+// const addRaw = () => {
+//   props.join.on.conditions.push({
+//     type: "raw",
+//     sql: "",
+//   });
+// };
 
 const remove = (i: number) => {
   if (i === 0 ) return;

@@ -171,6 +171,15 @@ function findRoot(tables: QueryTable[], joins: Join[]): QueryTable {
       max = degree;
       best = t;
     }
+    else if (degree === max) {
+    
+      const currentScore = joins.filter(j => j.fromTableId === t.id).length;
+      const bestScore = joins.filter(j => j.fromTableId === best.id).length;
+
+      if (currentScore > bestScore) {
+        best = t;
+      }
+    }
   });
 
   return best;
