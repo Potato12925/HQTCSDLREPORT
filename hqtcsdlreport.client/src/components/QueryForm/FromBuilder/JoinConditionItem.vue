@@ -1,9 +1,9 @@
 <template>
   <div
-    class="flex gap-2 mb-1 items-center text-sm"
-    :class="props.isFirst ? 'opacity-50 pointer-events-none' : ''"
+    class="flex gap-2 items-center text-sm"
+    :class="props.isFirst ? 'opacity-80 pointer-events-none' : ''"
   >
-    <!-- ================= RAW ================= -->
+    <!-- ================= RAW ================= -->  
     <template v-if="isRaw(cond)">
       <input
         v-model="cond.sql"

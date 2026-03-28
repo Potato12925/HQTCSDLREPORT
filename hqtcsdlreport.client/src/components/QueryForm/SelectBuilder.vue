@@ -22,6 +22,11 @@
         :key="col.column.columnId"
         class="flex gap-2 items-center mb-2 flex-wrap p-2 rounded-lg transition hover:bg-primary/5"
       >
+        <!-- SHOW -->
+        <label class="flex items-center gap-1 text-xs text-dark">
+          <input v-model="col.show" type="checkbox" />
+        </label>
+
         <!-- COLUMN NAME -->
         <span class="w-40 text-sm text-dark font-medium">
           {{ col.column.columnName }}
@@ -53,7 +58,7 @@
           <button
             v-if="!col.criteria"
             @click="initCriteria(col)"
-            class="text-xs px-2 py-1 bg-primary text-white rounded"
+            class="text-sm px-2 py-1 bg-primary text-white rounded"
           >
             + Filter
           </button>
@@ -75,7 +80,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import type { QueryState, QueryTable, QueryColumn, Condition } from "@/types/queryState";
+import type { QueryState, QueryTable, QueryColumn } from "@/types/queryState";
 
 import DistinctToggle from "./DistinctToggle.vue";
 import ConditionItem from "../Condition/ConditionItem.vue";

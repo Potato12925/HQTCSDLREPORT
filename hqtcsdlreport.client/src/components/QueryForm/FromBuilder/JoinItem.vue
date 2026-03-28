@@ -12,7 +12,7 @@
 
       <span class="font-medium">JOIN</span>
 
-      <select v-model="join.toTableId" class="border border-primary/20 px-2 py-1 rounded bg-light text-sm focus:outline-none focus:ring-2 focus:ring-primary/40">
+      <select v-model="join.toTableId" class="border border-primary/20 px-2 py-1 rounded bg-light text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 opacity-80 pointer-events-none">
         <option v-for="t in tables" :key="t.id" :value="t.id">
           {{ t.tableName }}
         </option>
@@ -26,10 +26,10 @@
       />
 
       <span v-if="join.type !== 'CROSS'" class="font-medium">ON</span>
+      <!-- CONDITIONS -->
+      <JoinConditionList v-if="join.type !== 'CROSS'" :join="join" :tables="tables" />
     </div>
 
-    <!-- CONDITIONS -->
-    <JoinConditionList v-if="join.type !== 'CROSS'" :join="join" :tables="tables" />
   </div>
 </template>
 

@@ -1,5 +1,5 @@
 <template>
-  <div class="ml-4">
+  <div >
     <JoinConditionItem
       v-for="(cond, i) in join.on.conditions"
       :key="i"

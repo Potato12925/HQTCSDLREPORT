@@ -1,3 +1,77 @@
+<template>
+  <div class="flex items-center gap-2 flex-wrap p-2">
+    <!-- COLUMN -->
+    <template v-if="!hideColumn">
+      <template v-if="!fixedColumn">
+        <select
+          v-model="condition.column"
+          class="border border-primary/20 px-2 py-1 rounded bg-light text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+        >
+          <option value="">--column--</option>
+
+          <optgroup v-for="table in tables" :key="table.id" :label="table.alias || table.tableName">
+            <option v-for="col in table.columns" :key="col.column.columnId" :value="col.column">
+              {{ col.column.columnName }}
+            </option>
+          </optgroup>
+        </select>
+      </template>
+
+      <span
+        v-else
+        class="text-sm font-medium text-dark px-2 py-1 bg-white border border-primary/10 rounded"
+      >
+        {{ fixedColumn.columnName }}
+      </span>
+    </template>
+
+    <!-- OPERATOR -->
+    <select
+      v-model="condition.operator"
+      class="border border-primary/20 px-2 py-1 rounded bg-light text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+    >
+      <option v-for="op in operators" :key="op" :value="op">
+        {{ op }}
+      </option>
+    </select>
+
+    <!-- ===== VALUE ===== -->
+
+    <!-- BETWEEN -->
+    <template v-if="condition.operator === 'BETWEEN'">
+      <input
+        v-model="betweenValue[0]"
+        placeholder="min"
+        class="border border-primary/20 px-2 py-1 rounded bg-light text-sm w-24"
+      />
+      <span class="text-xs text-dark">AND</span>
+      <input
+        v-model="betweenValue[1]"
+        placeholder="max"
+        class="border border-primary/20 px-2 py-1 rounded bg-light text-sm w-24"
+      />
+    </template>
+
+    <!-- IN -->
+    <input
+      v-else-if="condition.operator === 'IN'"
+      v-model="inValue"
+      placeholder="a, b, c"
+      class="border border-primary/20 px-2 py-1 rounded bg-light text-sm min-w-[140px]"
+    />
+
+    <!-- NORMAL -->
+    <input
+      v-else-if="!['IS NULL', 'IS NOT NULL'].includes(condition.operator)"
+      v-model="condition.value"
+      placeholder="value"
+      class="border border-primary/20 px-2 py-1 rounded bg-light text-sm min-w-[120px]"
+    />
+
+    <!-- REMOVE -->
+    <button @click="$emit('remove')" class="text-red-500 hover:text-red-600 text-sm px-1">✕</button>
+  </div>
+</template>
 <script setup lang="ts">
 import { computed, watch } from "vue";
 import type { QueryTable, Condition, Operator, ColumnRef } from "@/types/queryState";
@@ -80,78 +154,3 @@ watch(
   },
 );
 </script>
-
-<template>
-  <div class="flex items-center gap-2 flex-wrap p-2">
-    <!-- COLUMN -->
-    <template v-if="!hideColumn">
-      <template v-if="!fixedColumn">
-        <select
-          v-model="condition.column"
-          class="border border-primary/20 px-2 py-1 rounded bg-light text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-        >
-          <option value="">--column--</option>
-
-          <optgroup v-for="table in tables" :key="table.id" :label="table.alias || table.tableName">
-            <option v-for="col in table.columns" :key="col.column.columnId" :value="col.column">
-              {{ col.column.columnName }}
-            </option>
-          </optgroup>
-        </select>
-      </template>
-
-      <span
-        v-else
-        class="text-sm font-medium text-dark px-2 py-1 bg-white border border-primary/10 rounded"
-      >
-        {{ fixedColumn.columnName }}
-      </span>
-    </template>
-
-    <!-- OPERATOR -->
-    <select
-      v-model="condition.operator"
-      class="border border-primary/20 px-2 py-1 rounded bg-light text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
-    >
-      <option v-for="op in operators" :key="op" :value="op">
-        {{ op }}
-      </option>
-    </select>
-
-    <!-- ===== VALUE ===== -->
-
-    <!-- BETWEEN -->
-    <template v-if="condition.operator === 'BETWEEN'">
-      <input
-        v-model="betweenValue[0]"
-        placeholder="min"
-        class="border border-primary/20 px-2 py-1 rounded bg-light text-sm w-24"
-      />
-      <span class="text-xs text-dark">AND</span>
-      <input
-        v-model="betweenValue[1]"
-        placeholder="max"
-        class="border border-primary/20 px-2 py-1 rounded bg-light text-sm w-24"
-      />
-    </template>
-
-    <!-- IN -->
-    <input
-      v-else-if="condition.operator === 'IN'"
-      v-model="inValue"
-      placeholder="a, b, c"
-      class="border border-primary/20 px-2 py-1 rounded bg-light text-sm min-w-[140px]"
-    />
-
-    <!-- NORMAL -->
-    <input
-      v-else-if="!['IS NULL', 'IS NOT NULL'].includes(condition.operator)"
-      v-model="condition.value"
-      placeholder="value"
-      class="border border-primary/20 px-2 py-1 rounded bg-light text-sm min-w-[120px]"
-    />
-
-    <!-- REMOVE -->
-    <button @click="$emit('remove')" class="text-red-500 hover:text-red-600 text-sm px-1">✕</button>
-  </div>
-</template>
