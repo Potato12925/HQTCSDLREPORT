@@ -1,5 +1,8 @@
 <template>
-  <div class="flex gap-2 mb-1 items-center text-sm">
+  <div
+    class="flex gap-2 mb-1 items-center text-sm"
+    :class="props.isFirst ? 'opacity-50 pointer-events-none' : ''"
+  >
     <!-- ================= RAW ================= -->
     <template v-if="isRaw(cond)">
       <input

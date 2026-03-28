@@ -159,17 +159,21 @@ function buildGraph(joins: Join[]) {
   return graph;
 }
 function findRoot(tables: QueryTable[], joins: Join[]): QueryTable {
-  const joinedTables = joins.filter((join) => join.type !== "CROSS").map((join) => join.toTableId);
+  const graph = buildGraph(joins.filter(j => j.type !== "CROSS"));
 
-  const toSet = new Set(joinedTables);
+  let best = tables[0];
+  let max = -1;
 
-  for (const table of tables) {
-    if (!toSet.has(table.id)) {
-      return table;
+  tables.forEach(t => {
+    const degree = graph.get(t.id)?.length || 0;
+
+    if (degree > max) {
+      max = degree;
+      best = t;
     }
-  }
+  });
 
-  return tables[0];
+  return best;
 }
 function traverseAll(graph: Map<number, number[]>, tables: QueryTable[]) {
   const visited = new Set<number>();
