@@ -131,16 +131,16 @@ const operators = computed<Operator[]>(() => {
   switch (columnType.value) {
     case "number":
     case "date":
-      return ["=", "!=", ">", "<", ">=", "<=", "BETWEEN", "IN"];
+      return ["=", "!=", ">", "<", ">=", "<=", "BETWEEN", "IN", "IS NULL", "IS NOT NULL"];
 
     case "string":
-      return ["=", "!=", "LIKE", "IN"];
+      return ["=", "!=", "LIKE", "IN", "IS NULL", "IS NOT NULL"];
 
     case "boolean":
-      return ["=", "!="];
+      return ["=", "!=", "IS NULL", "IS NOT NULL"];
 
     default:
-      return ["="];
+      return ["=", "IS NULL", "IS NOT NULL"];
   }
 });
 

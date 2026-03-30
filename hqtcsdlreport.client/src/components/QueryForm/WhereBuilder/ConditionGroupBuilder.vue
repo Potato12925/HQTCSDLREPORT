@@ -133,15 +133,17 @@ function createGroup(): ConditionGroup {
 /* ================= ACTIONS ================= */
 
 function addCondition() {
+  if (newType.value === "group") {
+    model.value.conditions.push(createGroup());
+    return;
+  }
+
+  if (newType.value === "raw") {
+    model.value.conditions.push(createRaw());
+    return;
+  }
+
   model.value.conditions.push(createCondition());
-}
-
-function addRaw() {
-  model.value.conditions.push(createRaw());
-}
-
-function addGroup() {
-  model.value.conditions.push(createGroup());
 }
 
 function removeCondition(index: number) {
