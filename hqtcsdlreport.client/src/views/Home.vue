@@ -12,8 +12,8 @@ import { connectDbApi } from "@/api/dataApi";
 import TableTree from "@/components/TableInfo/TableTree.vue";
 import QueryForm from "@/components/QueryForm/QueryForm.vue";
 
-import type { QueryState, QueryTable, QueryColumn, Join } from "@/types/queryState";
-
+import type { QueryState, QueryTable, QueryColumn, Join, ColumnRef } from "@/types/queryState";
+import type { ColumnDataType } from "@/types/queryState";
 import type {
   TableMetadata,
   DatabaseMetadata,
@@ -35,6 +35,36 @@ const queryState = ref<QueryState>({});
 /* ================================
    HELPERS
 ================================ */
+
+const mapSqlServerType = (sqlType: string): ColumnDataType => {
+  const t = sqlType.toLowerCase();
+
+  if (
+    [
+      "int",
+      "bigint",
+      "smallint",
+      "tinyint",
+      "decimal",
+      "numeric",
+      "float",
+      "real",
+      "money",
+      "smallmoney",
+    ].includes(t)
+  )
+    return "number";
+
+  if (["char", "varchar", "nchar", "nvarchar", "text", "ntext"].includes(t)) return "string";
+
+  if (["date", "datetime", "datetime2", "smalldatetime", "time", "datetimeoffset"].includes(t))
+    return "date";
+
+  if (t === "bit") return "boolean";
+
+  return "string";
+};
+
 const mapToQueryColumn = (table: TableMetadata, column: ColumnMetadata): QueryColumn => {
   return {
     show: true,
@@ -42,6 +72,7 @@ const mapToQueryColumn = (table: TableMetadata, column: ColumnMetadata): QueryCo
       tableId: table.objectId,
       columnId: column.columnId,
       columnName: column.columnName,
+      dataType: mapSqlServerType(column.dataType),
     },
     alias: null,
     aggregate: null,
@@ -159,22 +190,20 @@ function buildGraph(joins: Join[]) {
   return graph;
 }
 function findRoot(tables: QueryTable[], joins: Join[]): QueryTable {
-  const graph = buildGraph(joins.filter(j => j.type !== "CROSS"));
+  const graph = buildGraph(joins.filter((j) => j.type !== "CROSS"));
 
   let best = tables[0];
   let max = -1;
 
-  tables.forEach(t => {
+  tables.forEach((t) => {
     const degree = graph.get(t.id)?.length || 0;
 
     if (degree > max) {
       max = degree;
       best = t;
-    }
-    else if (degree === max) {
-    
-      const currentScore = joins.filter(j => j.fromTableId === t.id).length;
-      const bestScore = joins.filter(j => j.fromTableId === best.id).length;
+    } else if (degree === max) {
+      const currentScore = joins.filter((j) => j.fromTableId === t.id).length;
+      const bestScore = joins.filter((j) => j.fromTableId === best.id).length;
 
       if (currentScore > bestScore) {
         best = t;

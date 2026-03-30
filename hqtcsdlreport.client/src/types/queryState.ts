@@ -3,11 +3,13 @@
 export type ID = number;
 
 // ===================== COLUMN REF =====================
+export type ColumnDataType = "number" | "string" | "boolean" | "date";
 
 export interface ColumnRef {
   tableId: ID;
   columnId: ID;
   columnName: string;
+  dataType?: ColumnDataType;
 }
 
 // ===================== COLUMN =====================
