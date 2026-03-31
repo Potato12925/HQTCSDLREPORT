@@ -55,12 +55,42 @@ export interface ConditionGroup {
   conditions: (Condition | ConditionGroup | RawCondition)[];
 }
 
-// ===================== WHERE =====================
+export type HavingCondition =
+  | {
+      type: "aggregate";
+      fn: "COUNT" | "SUM" | "AVG" | "MIN" | "MAX";
+      column: ColumnRef;
+      operator: Operator;
+      value?: any;
+    }
+  | {
+      type: "group_column";
+      column: ColumnRef;
+      operator: Operator;
+      value?: any;
+    }
+  | {
+      type: "alias";
+      alias: string;
+      operator: Operator;
+      value?: any;
+    };
+    
+export interface HavingConditionGroup {
+  type: "AND" | "OR";
+  conditions: (HavingCondition | HavingConditionGroup)[];
+}
+// ===================== WHERE/HAVING =====================
 
 export type WhereClause = {
   mode: "builder";
   group: ConditionGroup;
 };
+
+export type HavingClause = {
+  mode: "builder";
+  group: HavingConditionGroup;
+}
 
 // ===================== ORDER BY =====================
 
@@ -110,7 +140,7 @@ export interface QueryState {
   joins?: Join[];
 
   where?: WhereClause | null;
-  having?: WhereClause | null;
+  having?: HavingClause | null;
 
   groupBy?: GroupBy[];
   orderBy?: OrderBy[];
