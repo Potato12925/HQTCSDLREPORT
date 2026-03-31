@@ -9,6 +9,8 @@
 
       <GroupByBuilder :state="props.queryState" :columns="allColumns" />
 
+      <HavingBuilder :state="props.queryState" />
+
       <OrderByBuilder :state="props.queryState" :columns="allColumns" />
 
       <PaginationControl :state="props.queryState" />
@@ -27,7 +29,7 @@ import GroupByBuilder from "./GroupByBuilder.vue";
 import OrderByBuilder from "./OrderByBuilder.vue";
 import PaginationControl from "./PaginationControl.vue";
 import FromBuilder from "./FromBuilder/FromBuilder.vue";
-
+import HavingBuilder from "./HavingBuilder/HavingBuilder.vue";
 const props = defineProps<{
   queryState: QueryState;
 }>();
@@ -50,3 +52,4 @@ const allColumns = computed<ColumnRef[]>(() => {
   return result;
 });
 </script>
+
