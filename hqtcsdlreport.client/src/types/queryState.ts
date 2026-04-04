@@ -72,6 +72,7 @@ export type HavingCondition =
   | {
       type: "alias";
       alias: string;
+      aliasColumn?: ColumnRef;
       operator: Operator;
       value?: any;
     };
@@ -129,11 +130,17 @@ export interface QueryTable {
   columns: QueryColumn[];
 }
 
+//====================== SELECT * =====================
+
+export interface SelectStar {
+  alias?: string | null;
+}
+
 // ===================== ROOT =====================
 
 export interface QueryState {
   distinct?: boolean;
-
+  star?: SelectStar;
   tables?: QueryTable[];
 
   from?: QueryTable;
@@ -144,7 +151,4 @@ export interface QueryState {
 
   groupBy?: GroupBy[];
   orderBy?: OrderBy[];
-
-  limit?: number;
-  offset?: number;
 }

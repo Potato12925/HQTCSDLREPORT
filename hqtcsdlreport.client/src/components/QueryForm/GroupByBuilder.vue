@@ -1,8 +1,6 @@
 <template>
   <div class="mb-6">
-    <h3 class="font-semibold text-primary mb-3 text-lg tracking-wide">
-      GROUP BY
-    </h3>
+    <h3 class="font-semibold text-primary mb-3 text-lg tracking-wide">GROUP BY</h3>
 
     <!-- TAG LIST -->
     <div class="flex flex-wrap gap-2">
@@ -16,9 +14,7 @@
         </span>
       </div>
 
-      <span v-if="autoGroupBy.length === 0" class="text-xs text-dark/60 italic">
-        No group by
-      </span>
+      <span v-if="autoGroupBy.length === 0" class="text-xs text-dark/60 italic"> No group by </span>
     </div>
   </div>
 </template>
@@ -39,17 +35,13 @@ const props = defineProps<{
 ======================== */
 const tables = computed<QueryTable[]>(() => props.state.tables ?? []);
 
-const allColumns = computed(() =>
-  tables.value.flatMap((t) => t.columns)
-);
+const allColumns = computed(() => tables.value.flatMap((t) => t.columns));
 
 /* ========================
    AUTO GROUP BY LOGIC
 ======================== */
 const autoGroupBy = computed<GroupBy[]>(() => {
-  const hasAggregate = allColumns.value.some(
-    (c) => c.show && c.aggregate
-  );
+  const hasAggregate = allColumns.value.some((c) => c.show && c.aggregate);
 
   if (!hasAggregate) return [];
 
@@ -74,6 +66,15 @@ watchEffect(() => {
 /* ========================
    HELPERS
 ======================== */
-const getColumnName = (col: ColumnRef | string) =>
-  typeof col === "string" ? col : col.columnName;
+const getColumnName = (col: ColumnRef | string) => {
+  if (typeof col === "string") return col;
+
+  const table = tables.value.find((t) => t.id === col.tableId);
+
+  if (!table) return col.columnName;
+
+  const tableLabel = table.alias || table.tableName;
+
+  return `${tableLabel}.${col.columnName}`;
+};
 </script>

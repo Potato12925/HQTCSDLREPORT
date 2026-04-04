@@ -22,9 +22,9 @@
       </option>
     </select>
 
-    <select v-if="model.type === 'alias'" v-model="model.alias" class="input">
+    <select v-if="model.type === 'alias'" v-model="selectedAliasKey" class="input">
       <option disabled value="">Select alias</option>
-      <option v-for="alias in aliases" :key="alias.alias" :value="alias.alias">
+      <option v-for="alias in aliases" :key="aliasOptionKey(alias)" :value="aliasOptionKey(alias)">
         {{ alias.label }}
       </option>
     </select>
@@ -123,7 +123,8 @@ const conditionType = computed<HavingCondition["type"]>({
 
     model.value = {
       type: "alias",
-      alias: getDefaultAlias(),
+      alias: getDefaultAlias().alias,
+      aliasColumn: getDefaultAlias().column,
       operator: "=",
       value: "",
     };
@@ -156,6 +157,9 @@ const selectedColumn = computed<SelectableColumn | null>({
 
 const columnType = computed<ColumnDataType>(() => {
   if (model.value.type === "alias") {
+    const matchedByColumn = findAliasByColumn(model.value.aliasColumn);
+    if (matchedByColumn) return matchedByColumn.dataType;
+
     return props.aliases.find((a) => a.alias === (model.value as any).alias)?.dataType ?? "string";
   }
 
@@ -166,6 +170,29 @@ const columnType = computed<ColumnDataType>(() => {
   }
 
   return selectedColumn.value?.dataType ?? "string";
+});
+
+const selectedAliasKey = computed<string>({
+  get() {
+    if (model.value.type !== "alias") return "";
+
+    const byColumn = findAliasByColumn(model.value.aliasColumn);
+    if (byColumn) return aliasOptionKey(byColumn);
+
+    const byName = props.aliases.find((a) => a.alias === (model.value as Extract<HavingCondition, { type: "alias" }>).alias);
+    if (byName) return aliasOptionKey(byName);
+
+    return "";
+  },
+  set(key) {
+    if (model.value.type !== "alias" || !key) return;
+
+    const selected = props.aliases.find((a) => aliasOptionKey(a) === key);
+    if (!selected) return;
+
+    model.value.alias = selected.alias;
+    model.value.aliasColumn = toColumnRef(selected.column);
+  },
 });
 
 const operators = computed<Operator[]>(() => {
@@ -256,8 +283,7 @@ watch(
   () => model.value,
   (current) => {
     if (current.type === "alias") {
-      const alias = current.alias?.trim() ?? "";
-      if (!alias) current.alias = getDefaultAlias();
+      syncAliasCondition(current);
       return;
     }
 
@@ -266,6 +292,15 @@ watch(
     }
   },
   { deep: true, immediate: true },
+);
+
+watch(
+  () => props.aliases,
+  () => {
+    if (model.value.type !== "alias") return;
+    syncAliasCondition(model.value);
+  },
+  { deep: true },
 );
 
 function getDefaultColumn(): ColumnRef {
@@ -289,7 +324,64 @@ function getDefaultColumn(): ColumnRef {
 }
 
 function getDefaultAlias() {
-  return props.aliases[0]?.alias ?? "";
+  const firstAlias = props.aliases[0];
+
+  if (!firstAlias) {
+    return {
+      alias: "",
+      column: undefined,
+    };
+  }
+
+  return {
+    alias: firstAlias.alias,
+    column: toColumnRef(firstAlias.column),
+  };
+}
+
+function aliasOptionKey(alias: SelectableAlias) {
+  return `${alias.column.tableId}:${alias.column.columnId}`;
+}
+
+function findAliasByColumn(column?: ColumnRef) {
+  if (!column) return undefined;
+
+  return props.aliases.find(
+    (a) => a.column.tableId === column.tableId && a.column.columnId === column.columnId,
+  );
+}
+
+function syncAliasCondition(current: Extract<HavingCondition, { type: "alias" }>) {
+  const normalizedAlias = current.alias?.trim() ?? "";
+  const aliasByColumn = findAliasByColumn(current.aliasColumn);
+
+  if (aliasByColumn) {
+    current.alias = aliasByColumn.alias;
+    current.aliasColumn = toColumnRef(aliasByColumn.column);
+    return;
+  }
+
+  if (normalizedAlias) {
+    const aliasByName = props.aliases.find((a) => a.alias === normalizedAlias);
+    if (aliasByName) {
+      current.alias = aliasByName.alias;
+      current.aliasColumn = toColumnRef(aliasByName.column);
+      return;
+    }
+  }
+
+  const fallback = getDefaultAlias();
+  current.alias = fallback.alias;
+  current.aliasColumn = fallback.column;
+}
+
+function toColumnRef(column: ColumnRef): ColumnRef {
+  return {
+    tableId: column.tableId,
+    columnId: column.columnId,
+    columnName: column.columnName,
+    dataType: column.dataType,
+  };
 }
 
 function normalizeSingleValue(value: unknown) {

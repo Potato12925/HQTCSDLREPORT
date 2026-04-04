@@ -2,20 +2,18 @@
   <div class="flex-1 p-4 bg-light overflow-y-auto">
     <div v-if="hasTables">
       <SelectBuilder :state="props.queryState" />
-      
+
       <FromBuilder :state="props.queryState"></FromBuilder>
 
       <WhereBuilder :state="props.queryState" />
 
-      <GroupByBuilder :state="props.queryState" :columns="allColumns" />
+      <GroupByBuilder v-if="shouldShowGroupBy" :state="props.queryState" :columns="allColumns" />
 
-      <HavingBuilder :state="props.queryState" />
+      <HavingBuilder v-if="shouldShowGroupBy" :state="props.queryState" />
 
       <OrderByBuilder :state="props.queryState" :columns="allColumns" />
-
-      <PaginationControl :state="props.queryState" />
     </div>
-    
+
     <div v-else class="text-gray-400 text-center mt-10">Please select columns from tables</div>
   </div>
 </template>
@@ -27,16 +25,22 @@ import SelectBuilder from "@/components/QueryForm/SelectBuilder/SelectBuilder.vu
 import WhereBuilder from "@/components/QueryForm/WhereBuilder/WhereBuilder.vue";
 import GroupByBuilder from "./GroupByBuilder.vue";
 import OrderByBuilder from "./OrderByBuilder.vue";
-import PaginationControl from "./PaginationControl.vue";
 import FromBuilder from "./FromBuilder/FromBuilder.vue";
 import HavingBuilder from "./HavingBuilder/HavingBuilder.vue";
 const props = defineProps<{
   queryState: QueryState;
 }>();
-
 const hasTables = computed(() => {
   const tables = props.queryState.tables;
   return !!tables && tables.length > 0;
+});
+const shouldShowGroupBy = computed(() => {
+  const tables = props.queryState.tables ?? [];
+  const selectedColumns = tables.flatMap((table) => table.columns).filter((column) => column.show);
+
+  const hasAggregateColumn = selectedColumns.some((column) => column.aggregate);
+
+  return hasAggregateColumn;
 });
 const allColumns = computed<ColumnRef[]>(() => {
   if (!props.queryState.tables) return [];
@@ -52,4 +56,3 @@ const allColumns = computed<ColumnRef[]>(() => {
   return result;
 });
 </script>
-

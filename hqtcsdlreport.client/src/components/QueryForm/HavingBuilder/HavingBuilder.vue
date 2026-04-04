@@ -30,6 +30,7 @@ export type SelectableAlias = {
   alias: string;
   label: string;
   dataType: ColumnDataType;
+  column: ColumnRef;
 };
 
 const props = defineProps<{
@@ -64,6 +65,12 @@ const aliases = computed<SelectableAlias[]>(() => {
           alias,
           label: `${alias} (${tableName}.${c.column.columnName})`,
           dataType: inferAliasType(c.column.dataType, c.aggregate),
+          column: {
+            tableId: c.column.tableId,
+            columnId: c.column.columnId,
+            columnName: c.column.columnName,
+            dataType: c.column.dataType,
+          },
         };
       });
   });

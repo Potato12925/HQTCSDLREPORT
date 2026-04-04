@@ -2,16 +2,18 @@
   <div class="flex h-screen">
     <TableTree :tables="tables" :loading="loading" @toggle-column="handleToggleColumn" />
 
-    <QueryForm :queryState="queryState" />
+      <QueryForm :queryState="queryState" />
+
+      <SQLPreview v-if="hasQueryState" :state="queryState" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from "vue";
+import { ref, onMounted, watch, computed } from "vue";
 import { connectDbApi } from "@/api/dataApi";
 import TableTree from "@/components/TableInfo/TableTree.vue";
 import QueryForm from "@/components/QueryForm/QueryForm.vue";
-
+import SQLPreview from "@/components/SQLPreview/SQLPreview.vue";
 import type { QueryState, QueryTable, QueryColumn, Join, ColumnRef } from "@/types/queryState";
 import type { ColumnDataType } from "@/types/queryState";
 import type {
@@ -21,6 +23,9 @@ import type {
   ForeignKeyMetadata,
 } from "@/types/database";
 
+const hasQueryState = computed(() => {
+  return queryState.value.tables && queryState.value.tables.length > 0;
+});
 /* ================================
    STATE
 ================================ */
@@ -354,4 +359,7 @@ watch(
   },
   { deep: true },
 );
+onMounted(() => {
+  console.log("Initial Query State:\n", JSON.stringify(queryState.value, null, 2));
+});
 </script>
