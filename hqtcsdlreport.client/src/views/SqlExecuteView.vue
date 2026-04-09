@@ -55,10 +55,31 @@
   </main>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
 import { executeSqlApi } from "@/api/dataApi";
+
+type SqlExecutePayload = {
+  sql: string;
+  server?: string;
+  database?: string;
+};
+
+type SqlExecuteResponse = {
+  data?: {
+    columns?: string[];
+    rows?: Record<string, unknown>[];
+  };
+};
+
+type ApiErrorShape = {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+};
 
 const route = useRoute();
 
@@ -68,30 +89,72 @@ const sql = ref("");
 
 const loading = ref(false);
 const errorMessage = ref("");
-const columns = ref([]);
-const rows = ref([]);
+const columns = ref<string[]>([]);
+const rows = ref<Record<string, unknown>[]>([]);
 
-function formatCell(value) {
+function formatCell(value: unknown): string {
   if (value === null || value === undefined) return "NULL";
   if (typeof value === "object") return JSON.stringify(value);
   return String(value);
 }
 
-async function executeSql() {
-  server.value = String(route.query.server || "");
-  database.value = String(route.query.database || "");
+function getSingleQueryValue(value: unknown): string {
+  if (Array.isArray(value)) return String(value[0] || "");
+  return String(value || "");
+}
 
-  const rawSql = String(route.query.sql || "");
+function loadPayloadFromSession() {
+  const id = getSingleQueryValue(route.query.id);
+  if (!id) {
+    errorMessage.value = "Missing execute id in URL.";
+    alert("Missing execute id in URL.");
+    console.error("SqlExecuteView: missing query id.");
+    return false;
+  }
+
+  const storageKey = `sql_${id}`;
+  const rawPayload = sessionStorage.getItem(storageKey);
+
+  if (!rawPayload) {
+    errorMessage.value = "Execute payload not found in sessionStorage.";
+    alert("Execute payload not found. Please open Execute tab again.");
+    console.error(`SqlExecuteView: session payload not found for key "${storageKey}".`);
+    return false;
+  }
+
+  let payload: SqlExecutePayload;
   try {
-    sql.value = decodeURIComponent(rawSql);
+    payload = JSON.parse(rawPayload) as SqlExecutePayload;
+  } catch (error) {
+    errorMessage.value = "Invalid execute payload format.";
+    alert("Invalid execute payload. Please open Execute tab again.");
+    console.error("SqlExecuteView: failed to parse payload.", error);
+    return false;
+  }
+
+  server.value = String(payload.server || "");
+  database.value = String(payload.database || "");
+
+  const encodedSql = String(payload.sql || "");
+  try {
+    sql.value = decodeURIComponent(encodedSql);
   } catch {
-    sql.value = rawSql;
+    sql.value = encodedSql;
   }
 
   if (!server.value || !database.value || !sql.value) {
-    errorMessage.value = "Missing server, database or sql.";
-    return;
+    errorMessage.value = "Missing server, database or sql in execute payload.";
+    alert("Missing server/database/sql data in payload.");
+    console.error("SqlExecuteView: payload missing required fields.", payload);
+    return false;
   }
+
+  return true;
+}
+
+async function executeSql() {
+  const hasPayload = loadPayloadFromSession();
+  if (!hasPayload) return;
 
   loading.value = true;
   errorMessage.value = "";
@@ -99,16 +162,17 @@ async function executeSql() {
   try {
     const normalizedSql = sql.value.replace(/\r?\n/g, " ").trim();
 
-    const res = await executeSqlApi({
+    const res = (await executeSqlApi({
       server: server.value,
       database: database.value,
       sql: normalizedSql,
-    });
+    })) as SqlExecuteResponse;
 
     columns.value = res?.data?.columns || [];
     rows.value = res?.data?.rows || [];
-  } catch (err) {
-    errorMessage.value = err?.response?.data?.message || "Execute failed.";
+  } catch (err: unknown) {
+    const apiError = err as ApiErrorShape;
+    errorMessage.value = apiError?.response?.data?.message || "Execute failed.";
   } finally {
     loading.value = false;
   }

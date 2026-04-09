@@ -321,17 +321,38 @@ function stateDistinct() {
   return props.state.distinct ? " DISTINCT" : "";
 }
 
+function createExecuteId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+
+  return `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
 function openExecuteTab() {
   if (!canExecute.value) return;
 
   const encodedSql = encodeURIComponent(sql.value);
+  const id = createExecuteId();
+  const storageKey = `sql_${id}`;
+  const payload = {
+    sql: encodedSql,
+    server: props.server,
+    database: props.database,
+  };
+
+  try {
+    sessionStorage.setItem(storageKey, JSON.stringify(payload));
+  } catch (error) {
+    console.error("Failed to store SQL payload in sessionStorage.", error);
+    alert("Cannot open execute tab because SQL payload could not be stored.");
+    return;
+  }
 
   const route = router.resolve({
     name: "SqlExecute",
     query: {
-      sql: encodedSql,
-      server: props.server,
-      database: props.database,
+      id,
     },
   });
 
