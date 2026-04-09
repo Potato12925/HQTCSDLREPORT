@@ -124,16 +124,40 @@ function buildFrom(state: QueryState) {
     sql += ` ${state.from.alias}`;
   }
 
-  if (state.joins) {
+  if (state.joins?.length) {
+    const tableById = new Map((state.tables ?? []).map((t) => [t.id, t]));
+    const included = new Set<number>([state.from.id]);
+
     state.joins.forEach((j) => {
-      const to = state.tables?.find((t) => t.id === j.toTableId);
-      if (!to) return;
+      const fromIncluded = included.has(j.fromTableId);
+      const toIncluded = included.has(j.toTableId);
 
-      sql += ` \n${j.type} JOIN ${to.tableName}`;
+      let joinTableId: number | null = null;
 
-      if (to.alias) sql += ` ${to.alias}`;
+      if (fromIncluded && !toIncluded) {
+        joinTableId = j.toTableId;
+      } else if (toIncluded && !fromIncluded) {
+        joinTableId = j.fromTableId;
+      } else if (!fromIncluded && !toIncluded) {
+        joinTableId = j.toTableId ?? j.fromTableId;
+      } else {
+        return;
+      }
 
-      sql += ` ON ${buildConditionGroup(j.on)}`;
+      const joinTable = tableById.get(joinTableId);
+      if (!joinTable) return;
+
+      sql += ` \n${j.type} JOIN ${joinTable.tableName}`;
+
+      if (joinTable.alias) {
+        sql += ` ${joinTable.alias}`;
+      }
+
+      if (j.type !== "CROSS") {
+        sql += ` ON ${buildConditionGroup(j.on)}`;
+      }
+
+      included.add(joinTableId);
     });
   }
 
