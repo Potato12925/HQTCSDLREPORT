@@ -294,7 +294,7 @@ const canExecute = computed(() => {
 });
 
 function stateDistinct() {
-  return props.state.distinct ? "DISTINCT" : "";
+  return props.state.distinct ? " DISTINCT" : "";
 }
 
 function openExecuteTab() {

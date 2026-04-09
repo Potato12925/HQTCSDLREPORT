@@ -1,6 +1,12 @@
 <template>
   <div v-if="joins.length" class="mt-4">
-    <JoinItem v-for="(join, index) in joins" :key="index" :join="join" :tables="tables" />
+    <JoinItem
+      v-for="(join, index) in joins"
+      :key="index"
+      :join="join"
+      :tables="tables"
+      :root-table-id="rootTableId"
+    />
   </div>
 </template>
 
@@ -11,5 +17,6 @@ import type { Join, QueryTable } from "@/types/queryState";
 defineProps<{
   joins: Join[];
   tables: QueryTable[];
+  rootTableId?: number;
 }>();
 </script>

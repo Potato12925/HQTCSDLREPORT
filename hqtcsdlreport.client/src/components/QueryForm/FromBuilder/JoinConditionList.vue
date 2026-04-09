@@ -4,8 +4,11 @@
       v-for="(cond, i) in join.on.conditions"
       :key="i"
       :cond="cond"
+      :join="join"
       :tables="tables"
       :is-first="i === 0"
+      :lock-first="i === 0 && !allowFirstEdit"
+      :use-join-column-picker="i === 0 && allowFirstEdit"
       @remove="remove(i)"
     />
 
@@ -34,12 +37,15 @@
 
 <script setup lang="ts">
 import JoinConditionItem from "./JoinConditionItem.vue";
-import type { Join, Operator, QueryTable } from "@/types/queryState";
+import type { Join, QueryTable } from "@/types/queryState";
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   join: Join;
   tables: QueryTable[];
-}>();
+  allowFirstEdit?: boolean;
+}>(), {
+  allowFirstEdit: false,
+});
 
 // const add = (type: "AND" | "OR") => {
 //   props.join.on.conditions.push({

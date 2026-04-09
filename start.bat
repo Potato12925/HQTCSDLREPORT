@@ -5,7 +5,7 @@ color 0A
 echo ====== START BACKEND ======
 cd /d %~dp0HQTCSDLREPORT.Server
 
-start "🔧 BACKEND (.NET)" cmd /k "color 0B && echo === .NET Backend === && dotnet run --launch-profile https"
+start "🔧 BACKEND (.NET)" cmd /k "color 0B && echo === .NET Backend === && dotnet watch run --launch-profile https"
 
 cd ..
 

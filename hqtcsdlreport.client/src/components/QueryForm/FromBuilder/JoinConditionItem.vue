@@ -1,7 +1,7 @@
 <template>
   <div
     class="flex gap-2 items-center text-sm"
-    :class="props.isFirst ? 'opacity-80 pointer-events-none' : ''"
+    :class="props.lockFirst ? 'opacity-80 pointer-events-none' : ''"
   >
     <!-- ================= RAW ================= -->  
     <template v-if="isRaw(cond)">
@@ -14,7 +14,18 @@
     <!-- ================= NORMAL ================= -->
     <template v-else-if="isCondition(cond)">
       <!-- COLUMN -->
+      <select
+        v-if="useColumnPicker && joinColumnOptions.length"
+        v-model="leftColumnKey"
+        class="border border-primary/20 px-2 py-1 rounded bg-light text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 w-48"
+      >
+        <option value="" disabled>Select column</option>
+        <option v-for="opt in joinColumnOptions" :key="`left-${opt.key}`" :value="opt.key">
+          {{ opt.label }}
+        </option>
+      </select>
       <input
+        v-else
         v-model="columnDisplay"
         class="border border-primary/20 px-2 py-1 rounded bg-light text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 w-40"
       />
@@ -57,7 +68,18 @@
 
       <!-- DEFAULT -->
       <template v-else>
+        <select
+          v-if="useColumnPicker && joinColumnOptions.length"
+          v-model="rightColumnKey"
+          class="border border-primary/20 px-2 py-1 rounded bg-light text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 w-48"
+        >
+          <option value="" disabled>Select column</option>
+          <option v-for="opt in joinColumnOptions" :key="`right-${opt.key}`" :value="opt.key">
+            {{ opt.label }}
+          </option>
+        </select>
         <input
+          v-else
           v-model="valueDisplay"
           class="border border-primary/20 px-2 py-1 rounded bg-light text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 w-40"
         />
@@ -75,19 +97,24 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, watch } from "vue";
+import { computed, watch } from "vue";
 import type {
   Condition,
   RawCondition,
   ConditionGroup,
   Operator,
+  ColumnRef,
+  Join,
   QueryTable,
 } from "@/types/queryState";
 
 const props = defineProps<{
   cond: Condition | RawCondition | ConditionGroup;
+  join?: Join;
   tables: QueryTable[];
   isFirst: boolean;
+  lockFirst?: boolean;
+  useJoinColumnPicker?: boolean;
 }>();
 
 defineEmits(["remove"]);
@@ -126,6 +153,12 @@ const noValueOperators: Operator[] = ["IS NULL", "IS NOT NULL"];
 
 // ================= HELPERS =================
 
+type JoinColumnOption = {
+  key: string;
+  label: string;
+  ref: ColumnRef;
+};
+
 const getTable = (tableId: number) => {
   return props.tables.find((t) => t.id === tableId);
 };
@@ -140,6 +173,49 @@ const formatColumn = (col: any) => {
   const name = table.alias || table.tableName;
 
   return `${name}.${col.columnName}`;
+};
+
+const useColumnPicker = computed(() => props.useJoinColumnPicker === true && props.isFirst);
+
+const joinColumnOptions = computed<JoinColumnOption[]>(() => {
+  if (!props.join) return [];
+
+  const ids = [props.join.fromTableId, props.join.toTableId];
+  const dedup = [...new Set(ids)];
+
+  return dedup.flatMap((tableId) => {
+    const table = getTable(tableId);
+    if (!table) return [];
+
+    const tableName = table.alias || table.tableName;
+
+    return table.columns.map((c) => {
+      const col = c.column;
+      const key = `${col.tableId}:${col.columnId}`;
+
+      return {
+        key,
+        label: `${tableName}.${col.columnName}`,
+        ref: {
+          tableId: col.tableId,
+          columnId: col.columnId,
+          columnName: col.columnName,
+          dataType: col.dataType,
+        },
+      };
+    });
+  });
+});
+
+const optionByKey = (key: string) => {
+  return joinColumnOptions.value.find((o) => o.key === key);
+};
+
+const keyFromRef = (col: unknown) => {
+  if (!col || typeof col !== "object") return "";
+  const maybeRef = col as Partial<ColumnRef>;
+  if (typeof maybeRef.tableId !== "number" || typeof maybeRef.columnId !== "number") return "";
+  return `${maybeRef.tableId}:${maybeRef.columnId}`;
 };
 
 // ================= COLUMN DISPLAY =================
@@ -166,6 +242,19 @@ const columnDisplay = computed({
   },
 });
 
+const leftColumnKey = computed({
+  get() {
+    if (!isCondition(props.cond)) return "";
+    return keyFromRef(props.cond.column);
+  },
+  set(val: string) {
+    if (!isCondition(props.cond)) return;
+    const picked = optionByKey(val);
+    if (!picked) return;
+    props.cond.column = { ...picked.ref };
+  },
+});
+
 // ================= VALUE DISPLAY =================
 
 const valueDisplay = computed({
@@ -189,6 +278,19 @@ const valueDisplay = computed({
     } else {
       props.cond.value = val;
     }
+  },
+});
+
+const rightColumnKey = computed({
+  get() {
+    if (!isCondition(props.cond)) return "";
+    return keyFromRef(props.cond.value);
+  },
+  set(val: string) {
+    if (!isCondition(props.cond)) return;
+    const picked = optionByKey(val);
+    if (!picked) return;
+    props.cond.value = { ...picked.ref };
   },
 });
 
@@ -250,7 +352,18 @@ watch(
     }
   },
 );
-onMounted(() => {
-  console.log(props.isFirst);
-});
+
+watch(
+  [() => useColumnPicker.value, () => joinColumnOptions.value],
+  ([enabled, options]) => {
+    if (!enabled || !isCondition(props.cond) || options.length === 0) return;
+    if (typeof props.cond.column === "string" || !props.cond.column) {
+      props.cond.column = { ...options[0].ref };
+    }
+    if (!props.cond.value || typeof props.cond.value === "string") {
+      props.cond.value = { ...options[0].ref };
+    }
+  },
+  { immediate: true },
+);
 </script>
