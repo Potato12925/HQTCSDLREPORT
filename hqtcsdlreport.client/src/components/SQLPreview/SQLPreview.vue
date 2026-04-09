@@ -1,15 +1,50 @@
 <template>
-  <div class="border rounded-xl p-4 bg-light">
-    <h3 class="text-lg font-semibold text-primary mb-2">SQL Preview</h3>
+  <div class="p-4 bg-light shadow-md">
+    <div class="mb-2 flex items-center justify-between">
+      <h3 class="text-lg font-semibold text-primary">SQL Preview</h3>
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          class="inline-flex items-center gap-2 rounded bg-primary px-3 py-1 text-sm text-white hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
+          :disabled="!canExecute"
+          @click="openExecuteTab"
+        >
+          <span>Execute</span>
+        </button>
+        <button
+          type="button"
+          class="inline-flex items-center gap-2 rounded bg-white px-2 py-1 text-sm text-dark hover:bg-gray-100"
+          @click="copySql"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="1.5"
+            stroke="currentColor"
+            class="size-5"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M8.25 7.5V6.108c0-1.135.845-2.098 1.976-2.192.373-.03.748-.057 1.123-.08M15.75 18H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08M15.75 18.75v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5A3.375 3.375 0 0 0 6.375 7.5H5.25m11.9-3.664A2.251 2.251 0 0 0 15 2.25h-1.5a2.251 2.251 0 0 0-2.15 1.586m5.8 0c.065.21.1.433.1.664v.75h-6V4.5c0-.231.035-.454.1-.664M6.75 7.5H4.875c-.621 0-1.125.504-1.125 1.125v12c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V16.5a9 9 0 0 0-9-9Z"
+            />
+          </svg>
+          <span>{{ copyLabel }}</span>
+        </button>
+      </div>
+    </div>
 
-    <pre class="bg-dark text-white p-3 rounded overflow-auto text-sm"
-      >{{ sql }}
-    </pre>
+    <pre
+      class="bg-white text-dark p-3 overflow-auto text-sm rounded-xl shadow-sm border border-primary/10"
+      >{{ sql }}</pre
+    >
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
+import { useRouter } from "vue-router";
 import type {
   QueryState,
   QueryTable,
@@ -22,7 +57,12 @@ import type {
 
 const props = defineProps<{
   state: QueryState;
+  server?: string;
+  database?: string;
 }>();
+const router = useRouter();
+const copyLabel = ref("Copy");
+let copyResetTimer: ReturnType<typeof setTimeout> | null = null;
 
 // ===================== HELPERS =====================
 
@@ -239,18 +279,67 @@ function buildOrderBy(state: QueryState) {
 // ===================== FINAL SQL =====================
 const sql = computed(() => {
   const parts = [
-    `SELECT ${stateDistinct()} ${buildSelect(props.state)}`,
+    `SELECT${stateDistinct()} ${buildSelect(props.state)}`,
     buildFrom(props.state),
     buildWhere(props.state),
     buildGroupBy(props.state),
     buildHaving(props.state),
     buildOrderBy(props.state),
   ];
-
-  return parts.filter(Boolean).join("\n");
+  const query = parts.filter(Boolean).join("\n").trimEnd();
+  return query;
+});
+const canExecute = computed(() => {
+  return !!sql.value.trim() && !!props.server?.trim() && !!props.database?.trim();
 });
 
 function stateDistinct() {
   return props.state.distinct ? "DISTINCT" : "";
+}
+
+function openExecuteTab() {
+  if (!canExecute.value) return;
+
+  const encodedSql = encodeURIComponent(sql.value);
+
+  const route = router.resolve({
+    name: "SqlExecute",
+    query: {
+      sql: encodedSql,
+      server: props.server,
+      database: props.database,
+    },
+  });
+
+  window.open(route.href, "_blank");
+}
+
+async function copySql() {
+  const text = sql.value;
+
+  try {
+    if (navigator?.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+    }
+
+    copyLabel.value = "Copied!";
+  } catch {
+    copyLabel.value = "Copy failed";
+  }
+
+  if (copyResetTimer) clearTimeout(copyResetTimer);
+  copyResetTimer = setTimeout(() => {
+    copyLabel.value = "Copy";
+  }, 1200);
 }
 </script>

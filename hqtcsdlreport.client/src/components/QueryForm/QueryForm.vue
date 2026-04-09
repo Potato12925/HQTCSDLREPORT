@@ -1,5 +1,5 @@
 <template>
-  <div class="flex-1 p-4 bg-light overflow-y-auto">
+  <div class="p-4 bg-light">
     <div v-if="hasTables">
       <SelectBuilder :state="props.queryState" />
 

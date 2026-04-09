@@ -2,9 +2,16 @@
   <div class="flex h-screen">
     <TableTree :tables="tables" :loading="loading" @toggle-column="handleToggleColumn" />
 
+    <div class="flex flex-col flex-1 min-w-0">
+      <SQLPreview
+        v-if="hasQueryState"
+        :state="queryState"
+        :server="server"
+        :database="database"
+      />
       <QueryForm :queryState="queryState" />
 
-      <SQLPreview v-if="hasQueryState" :state="queryState" />
+    </div>
   </div>
 </template>
 
