@@ -1,0 +1,7 @@
+{
+  "profiles": {
+    "report": {
+      "commandName": "Project",
+      "launchBrowser": true
+    }}
+}

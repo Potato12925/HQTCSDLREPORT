@@ -2,22 +2,22 @@ using System;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// ================= SERVICES =================
 builder.Services.AddControllers();
-builder.Services.AddOpenApi();
+
+// Swagger (.NET 8)
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll",
-        policy =>
-        {
-            policy.AllowAnyOrigin()
-                  .AllowAnyMethod()
-                  .AllowAnyHeader();
-        });
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
 });
 
 // Session
@@ -32,28 +32,27 @@ builder.Services.AddSession(options =>
 
 var app = builder.Build();
 
+// ================= MIDDLEWARE =================
+
+// Swagger
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// Middleware pipeline
 app.UseHttpsRedirection();
 
-app.UseRouting();              // định tuyến trước
+app.UseRouting();
+
 app.UseCors("AllowAll");
 
-app.UseSession();              // bật session sau routing
+app.UseSession();   // phải trước MapControllers nếu dùng session
 
 app.UseAuthorization();
 
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
-
-app.MapControllers();          // controllers sau khi session đã bật
+// ================= ENDPOINTS =================
+app.MapControllers();
 app.MapFallbackToFile("/index.html");
 
 app.Run();
