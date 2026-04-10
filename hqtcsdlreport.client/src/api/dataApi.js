@@ -17,10 +17,10 @@ export const connectDbApi = (data) => {
   return api.post("/Data/connect", data);
 };
 
-export const reportApi = () => {
-  return api.get("/Data/report");
-};
-
 export const executeSqlApi = (data) => {
   return api.post("/Data/execute", data);
+};
+
+export const prepareReportApi = (data) => {
+  return api.post("/Report/prepare", data);
 };

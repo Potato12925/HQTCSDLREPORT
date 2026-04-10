@@ -1,9 +1,30 @@
+using DevExpress.AspNetCore;
+using DevExpress.AspNetCore.Reporting;
+using DevExpress.XtraReports.Web.Extensions;
+using HQTCSDL.Services;
+using HQTCSDLREPORT.Server.Services;
 using System;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // ================= SERVICES =================
 builder.Services.AddControllers();
+builder.Services.AddDevExpressControls();
+builder.Services.ConfigureReportingServices(configurator =>
+{
+    if (builder.Environment.IsDevelopment())
+    {
+        configurator.UseDevelopmentMode();
+    }
+
+    configurator.ConfigureWebDocumentViewer(viewerConfigurator =>
+    {
+        viewerConfigurator.UseCachedReportSourceBuilder();
+    });
+});
+builder.Services.AddScoped<ReportStorageWebExtension, CustomReportStorageWebExtension>();
+builder.Services.AddSingleton<SqlReportStore>();
+builder.Services.AddSingleton<MetadataService>();
 
 // Swagger (.NET 8)
 builder.Services.AddEndpointsApiExplorer();
@@ -42,6 +63,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseDevExpressControls();
 
 app.UseRouting();
 
@@ -52,6 +74,7 @@ app.UseSession();   // phải trước MapControllers nếu dùng session
 app.UseAuthorization();
 
 // ================= ENDPOINTS =================
+app.MapGet("/DXXRDV", () => Results.Redirect("/", permanent: false));
 app.MapControllers();
 app.MapFallbackToFile("/index.html");
 

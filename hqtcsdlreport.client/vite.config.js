@@ -65,6 +65,11 @@ export default defineConfig({
                 target,
                 secure: false,
                 changeOrigin: true
+            },
+            '^/DXXRDV': {
+                target,
+                secure: false,
+                changeOrigin: true
             }
         },
 
