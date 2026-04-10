@@ -1,6 +1,7 @@
 using HQTCSDL.Models;
 using HQTCSDL.Models.Report;
 using HQTCSDL.Services;
+using HQTCSDLREPORT.Server;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 
@@ -12,9 +13,9 @@ namespace HQTCSDL.Controllers
     {
         private readonly MetadataService _metadataService;
 
-        public DataController()
+        public DataController(MetadataService metadataService)
         {
-            _metadataService = new MetadataService();
+            _metadataService = metadataService;
         }
 
         [HttpGet("test")]
@@ -75,11 +76,10 @@ namespace HQTCSDL.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
-
-        [HttpGet("report")]
-        public IActionResult Report()
+        [HttpPost("report")]
+        public IActionResult Report([FromBody] ExecuteSqlRequest model)
         {
-            return Ok(new { message = "Report API" });
+            return BadRequest(new { message = "Use /api/Report/prepare to generate report data." });
         }
     }
 }

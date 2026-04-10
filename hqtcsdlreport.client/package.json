@@ -12,8 +12,13 @@
     "lint:eslint": "eslint . --fix --cache"
   },
   "dependencies": {
+    "@devexpress/analytics-core": "24.1.7",
     "@tailwindcss/vite": "^4.2.1",
     "axios": "^1.13.6",
+    "devexpress-reporting": "24.1.7",
+    "devextreme-dist": "24.1.7",
+    "jquery": "^3.7.1",
+    "knockout": "^3.5.1",
     "pinia": "^3.0.4",
     "vue": "^3.5.29",
     "vue-router": "^5.0.3"

@@ -1,23 +1,44 @@
+using DevExpress.AspNetCore;
+using DevExpress.AspNetCore.Reporting;
+using DevExpress.XtraReports.Web.Extensions;
+using HQTCSDL.Services;
+using HQTCSDLREPORT.Server.Services;
 using System;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// ================= SERVICES =================
 builder.Services.AddControllers();
-builder.Services.AddOpenApi();
+builder.Services.AddDevExpressControls();
+builder.Services.ConfigureReportingServices(configurator =>
+{
+    if (builder.Environment.IsDevelopment())
+    {
+        configurator.UseDevelopmentMode();
+    }
+
+    configurator.ConfigureWebDocumentViewer(viewerConfigurator =>
+    {
+        viewerConfigurator.UseCachedReportSourceBuilder();
+    });
+});
+builder.Services.AddScoped<ReportStorageWebExtension, CustomReportStorageWebExtension>();
+builder.Services.AddSingleton<SqlReportStore>();
+builder.Services.AddSingleton<MetadataService>();
+
+// Swagger (.NET 8)
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll",
-        policy =>
-        {
-            policy.AllowAnyOrigin()
-                  .AllowAnyMethod()
-                  .AllowAnyHeader();
-        });
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
 });
 
 // Session
@@ -32,28 +53,29 @@ builder.Services.AddSession(options =>
 
 var app = builder.Build();
 
+// ================= MIDDLEWARE =================
+
+// Swagger
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// Middleware pipeline
 app.UseHttpsRedirection();
+app.UseDevExpressControls();
 
-app.UseRouting();              // định tuyến trước
+app.UseRouting();
+
 app.UseCors("AllowAll");
 
-app.UseSession();              // bật session sau routing
+app.UseSession();   // phải trước MapControllers nếu dùng session
 
 app.UseAuthorization();
 
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
-
-app.MapControllers();          // controllers sau khi session đã bật
+// ================= ENDPOINTS =================
+app.MapGet("/DXXRDV", () => Results.Redirect("/", permanent: false));
+app.MapControllers();
 app.MapFallbackToFile("/index.html");
 
 app.Run();

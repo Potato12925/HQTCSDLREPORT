@@ -363,3 +363,17 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# =====================
+# DevExpress / Report (CUSTOM)
+# =====================
+# chỉ ignore build output
+report/wwwroot/**/*.bundle.css
+report/wwwroot/**/*.bundle.js
+
+# node_modules
+report/node_modules/
+
+# ignore temp DevExpress
+*.repx.bak
+*.~repx

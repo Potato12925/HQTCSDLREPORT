@@ -13,6 +13,14 @@
         </button>
         <button
           type="button"
+          class="inline-flex items-center gap-2 rounded bg-primary px-3 py-1 text-sm text-white hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
+          :disabled="!canExecute"
+          @click="openReportTab"
+        >
+          <span>Report</span>
+        </button>
+        <button
+          type="button"
           class="inline-flex items-center gap-2 rounded bg-white px-2 py-1 text-sm text-dark hover:bg-gray-100"
           @click="copySql"
         >
@@ -351,6 +359,36 @@ function openExecuteTab() {
 
   const route = router.resolve({
     name: "SqlExecute",
+    query: {
+      id,
+    },
+  });
+
+  window.open(route.href, "_blank");
+}
+
+function openReportTab() {
+  if (!canExecute.value) return;
+
+  const encodedSql = encodeURIComponent(sql.value);
+  const id = createExecuteId();
+  const storageKey = `report_${id}`;
+  const payload = {
+    sql: encodedSql,
+    server: props.server,
+    database: props.database,
+  };
+
+  try {
+    sessionStorage.setItem(storageKey, JSON.stringify(payload));
+  } catch (error) {
+    console.error("Failed to store report payload in sessionStorage.", error);
+    alert("Cannot open report tab because payload could not be stored.");
+    return;
+  }
+
+  const route = router.resolve({
+    name: "SqlReport",
     query: {
       id,
     },

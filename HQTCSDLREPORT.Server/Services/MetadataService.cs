@@ -2,6 +2,7 @@ using HQTCSDL.Models.Metadata;
 using HQTCSDL.Models.Report;
 using HQTCSDLREPORT.Server.Models.Metadata;
 using Microsoft.Data.SqlClient;
+using System.Data;
 using System.Text.RegularExpressions;
 
 namespace HQTCSDL.Services
@@ -170,6 +171,25 @@ namespace HQTCSDL.Services
             {
                 throw new ArgumentException("Data modification commands are not allowed.");
             }
+        }
+        public DataTable ExecuteSelectQueryAsDataTable(string connectionString, string sql)
+        {
+            ValidateSelectOnlyQuery(sql);
+
+            var dt = new DataTable("MyData");
+
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                conn.Open();
+
+                using (SqlCommand cmd = new SqlCommand(sql, conn))
+                using (SqlDataReader reader = cmd.ExecuteReader())
+                {
+                    dt.Load(reader);
+                }
+            }
+
+            return dt;
         }
     }
 }
