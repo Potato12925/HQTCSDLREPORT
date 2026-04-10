@@ -1,6 +1,7 @@
 using HQTCSDL.Models;
 using HQTCSDL.Models.Report;
 using HQTCSDL.Services;
+using HQTCSDLREPORT.Server;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 
@@ -75,11 +76,45 @@ namespace HQTCSDL.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
-
-        [HttpGet("report")]
-        public IActionResult Report()
+        [HttpPost("report")]
+        public IActionResult Report([FromBody] ExecuteSqlRequest model)
         {
-            return Ok(new { message = "Report API" });
+            if (string.IsNullOrWhiteSpace(model.Server) || string.IsNullOrWhiteSpace(model.Database))
+            {
+                return BadRequest(new { message = "Server and Database are required." });
+            }
+
+            var builder = new SqlConnectionStringBuilder
+            {
+                DataSource = model.Server,
+                InitialCatalog = model.Database,
+                IntegratedSecurity = true,
+                TrustServerCertificate = true
+            };
+
+            try
+            {
+                // 1. Lấy data
+                var dataTable = _metadataService.ExecuteSelectQueryAsDataTable(
+                    builder.ConnectionString,
+                    model.Sql
+                );
+
+                dataTable.TableName = "MyData";
+
+                //2. report
+                var report = new Report(dataTable);
+
+                // 3. Export
+                using var stream = new MemoryStream();
+                report.ExportToPdf(stream);
+
+                return File(stream.ToArray(), "application/pdf", "report.pdf");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
     }
 }
