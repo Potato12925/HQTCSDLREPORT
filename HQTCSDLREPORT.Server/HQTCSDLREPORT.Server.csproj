@@ -25,7 +25,7 @@
 		<PackageReference Include="Swashbuckle.AspNetCore.Filters" Version="8.0.2" />
 	</ItemGroup>
 
-	<ItemGroup>
+	<ItemGroup Condition="'$(BuildingInsideVisualStudio)' == 'true'">
 		<ProjectReference Include="..\hqtcsdlreport.client\hqtcsdlreport.client.esproj">
 			<ReferenceOutputAssembly>false</ReferenceOutputAssembly>
 		</ProjectReference>

@@ -16,19 +16,35 @@
         {{ table.tableName }}
       </div>
 
+      <!-- COLUMNS HEADER -->
+      <div
+        class="grid grid-cols-[80px_1fr_160px_180px_170px_150px] gap-2 px-2 py-1 mb-2 text-sm font-semibold uppercase tracking-wide text-dark"
+      >
+        <span class="text-center">Show</span>
+        <span>Column</span>
+        <span>Aggregattion</span>
+        <span>Alias</span>
+        <span class="text-center">Parameter Report</span>
+        <span class="text-center">Group Report</span>
+      </div>
+
       <!-- COLUMNS -->
       <div
         v-for="col in table.columns"
         :key="col.column.columnId"
-        class="flex gap-2 items-center mb-2 flex-wrap p-2 rounded-lg transition hover:bg-primary/5"
+        class="grid grid-cols-[80px_1fr_160px_180px_170px_150px] gap-2 items-center mb-2 p-2 rounded-lg transition hover:bg-primary/5"
       >
         <!-- SHOW -->
-        <label class="flex items-center gap-1 text-xs text-dark">
-          <input v-model="col.show" type="checkbox" />
+        <label class="flex items-center justify-center text-xs text-dark">
+          <input
+            v-model="col.show"
+            type="checkbox"
+            class="w-5 h-5 cursor-pointer accent-primary"
+          />
         </label>
 
         <!-- COLUMN NAME -->
-        <span class="w-40 text-sm text-dark font-medium">
+        <span class="text-sm text-dark font-medium truncate">
           {{ col.column.columnName }}
         </span>
 
@@ -49,8 +65,26 @@
         <input
           v-model="col.alias"
           placeholder="alias"
-          class="border border-primary/20 px-2 py-1 rounded bg-light text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+          class="w-full border border-primary/20 px-2 py-1 rounded bg-light text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
         />
+
+        <!-- PARAMETER REPORT -->
+        <label class="flex items-center justify-center">
+          <input
+            v-model="col.parameterReport"
+            type="checkbox"
+            class="w-5 h-5 cursor-pointer accent-primary"
+          />
+        </label>
+
+        <!-- GROUP REPORT -->
+        <label class="flex items-center justify-center">
+          <input
+            v-model="col.groupReport"
+            type="checkbox"
+            class="w-5 h-5 cursor-pointer accent-primary"
+          />
+        </label>
       </div>
     </div>
   </div>
