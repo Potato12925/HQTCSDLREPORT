@@ -65,6 +65,24 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseDevExpressControls();
 
+app.Use(async (context, next) =>
+{
+    var acceptHeader = context.Request.Headers.Accept.ToString();
+    var isDirectViewerNavigation =
+        HttpMethods.IsGet(context.Request.Method) &&
+        context.Request.Path.Equals("/DXXRDV", StringComparison.OrdinalIgnoreCase) &&
+        !context.Request.QueryString.HasValue &&
+        acceptHeader.Contains("text/html", StringComparison.OrdinalIgnoreCase);
+
+    if (isDirectViewerNavigation)
+    {
+        context.Response.Redirect("/");
+        return;
+    }
+
+    await next();
+});
+
 app.UseRouting();
 
 app.UseCors("AllowAll");
@@ -74,7 +92,6 @@ app.UseSession();   // phải trước MapControllers nếu dùng session
 app.UseAuthorization();
 
 // ================= ENDPOINTS =================
-app.MapGet("/DXXRDV", () => Results.Redirect("/", permanent: false));
 app.MapControllers();
 app.MapFallbackToFile("/index.html");
 

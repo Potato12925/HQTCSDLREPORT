@@ -35,18 +35,17 @@ const props = defineProps<{
 ======================== */
 const tables = computed<QueryTable[]>(() => props.state.tables ?? []);
 
-const allColumns = computed(() => tables.value.flatMap((t) => t.columns));
+const allColumns = computed(() => (props.state.tables ?? []).flatMap((t) => t.columns));
 
-/* ========================
-   AUTO GROUP BY LOGIC
-======================== */
 const autoGroupBy = computed<GroupBy[]>(() => {
-  const hasAggregate = allColumns.value.some((c) => c.show && c.aggregate);
+  const cols = allColumns.value;
+
+  const hasAggregate = cols.some((c) => c.show && c.aggregate !== null);
 
   if (!hasAggregate) return [];
 
-  return allColumns.value
-    .filter((c) => c.show && !c.aggregate)
+  return cols
+    .filter((c) => c.show && c.aggregate === null)
     .map((c) => ({
       column: c.column,
     }));
@@ -56,6 +55,9 @@ const autoGroupBy = computed<GroupBy[]>(() => {
    SYNC TO STATE
 ======================== */
 watchEffect(() => {
+  console.log("group", autoGroupBy.value);
+  console.log("group length", autoGroupBy.value.length);
+
   if (autoGroupBy.value.length === 0) {
     props.state.groupBy = undefined;
   } else {

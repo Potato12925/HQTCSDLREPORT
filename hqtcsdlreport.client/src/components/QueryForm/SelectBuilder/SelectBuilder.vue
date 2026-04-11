@@ -51,28 +51,6 @@
           placeholder="alias"
           class="border border-primary/20 px-2 py-1 rounded bg-light text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
         />
-
-        <!-- ✅ CONDITION ITEM -->
-        <div class="flex items-center gap-2">
-          <!-- nếu chưa có criteria -->
-          <button
-            v-if="!col.criteria"
-            @click="initCriteria(col)"
-            class="text-sm px-2 py-1 bg-primary text-white rounded"
-          >
-            + Filter
-          </button>
-
-          <!-- nếu có criteria -->
-          <Criteria
-            v-else
-            v-model="col.criteria"
-            :tables="tables"
-            :fixedColumn="col.column"
-            :hideColumn="true"
-            @remove="clearCriteria(col)"
-          />
-        </div>
       </div>
     </div>
   </div>
@@ -83,7 +61,6 @@ import { computed } from "vue";
 import type { QueryState, QueryTable, QueryColumn } from "@/types/queryState";
 
 import DistinctToggle from "@/components/QueryForm/DistinctToggle.vue";
-import Criteria from "@/components/QueryForm/SelectBuilder/Criteria.vue";
 
 /* ========================
    PROPS
@@ -98,21 +75,6 @@ const props = defineProps<{
 const tables = computed<QueryTable[]>(() => {
   return props.state.tables ?? [];
 });
-
-/* ========================
-   HANDLERS
-======================== */
-function initCriteria(col: QueryColumn) {
-  col.criteria = {
-    column: col.column,
-    operator: "=",
-    value: "",
-  };
-}
-
-function clearCriteria(col: QueryColumn) {
-  col.criteria = null;
-}
 </script>
 
 <style scoped>

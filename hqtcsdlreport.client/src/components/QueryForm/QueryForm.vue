@@ -7,9 +7,9 @@
 
       <WhereBuilder :state="props.queryState" />
 
-      <GroupByBuilder v-if="shouldShowGroupBy" :state="props.queryState" :columns="allColumns" />
+      <GroupByBuilder v-show="shouldShowGroupBy" :state="props.queryState" />
 
-      <HavingBuilder v-if="shouldShowGroupBy" :state="props.queryState" />
+      <HavingBuilder v-show="shouldShowGroupBy" :state="props.queryState" />
 
       <OrderByBuilder :state="props.queryState" :columns="allColumns" />
     </div>
