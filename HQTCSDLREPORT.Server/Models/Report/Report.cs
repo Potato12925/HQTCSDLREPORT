@@ -17,9 +17,9 @@ namespace HQTCSDLREPORT.Server
             ApplyDataTable(dt);
         }
 
-        public Report(DataTable dt, string title, string parameter, string groupBy) : this(dt)
+        public Report(DataTable dt, string title, string parameter, List<string> groupBy) : this(dt)
         {
-            ApplyHeader(title, parameter, groupBy);
+            ApplyHeader(title, parameter,groupBy);
         }
 
         public void ApplyDataTable(DataTable dt)
@@ -78,7 +78,7 @@ namespace HQTCSDLREPORT.Server
             Detail.Controls.Add(detailTable);
         }
 
-        private void ApplyHeader(string title, string parameter, string groupBy)
+        private void ApplyHeader(string title, string parameter, List<string> groupBy)
         {
             ReportHeader.Controls.Clear();
 
@@ -103,22 +103,25 @@ namespace HQTCSDLREPORT.Server
             {
                 var parameterLabel = new XRLabel
                 {
-                    Text = $"Parameter: {parameter}",
+                    Text = $"Filter: {parameter}",
                     BoundsF = new RectangleF(0, y, printableWidth, 22f),
-                    Font = new Font("Arial", 10, FontStyle.Regular),
+                    Font = new Font("Arial", 10),
                     TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleLeft
                 };
                 ReportHeader.Controls.Add(parameterLabel);
                 y += parameterLabel.HeightF + spacing;
+
+                // 👉 APPLY FILTER THẬT
+                this.FilterString = parameter;
             }
 
-            if (!string.IsNullOrWhiteSpace(groupBy))
+            if (groupBy != null && groupBy.Any())
             {
                 var groupByLabel = new XRLabel
                 {
-                    Text = $"Group by: {groupBy}",
+                    Text = $"Group by: {string.Join(", ", groupBy)}",
                     BoundsF = new RectangleF(0, y, printableWidth, 22f),
-                    Font = new Font("Arial", 10, FontStyle.Regular),
+                    Font = new Font("Arial", 10),
                     TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleLeft
                 };
                 ReportHeader.Controls.Add(groupByLabel);
