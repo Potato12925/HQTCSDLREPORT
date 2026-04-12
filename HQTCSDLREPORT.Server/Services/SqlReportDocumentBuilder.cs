@@ -1,6 +1,9 @@
 using DevExpress.DataAccess.Json;
 using DevExpress.XtraReports.UI;
+using HQTCSDL.Models.Report;
+using System;
 using System.Data;
+using System.Linq;
 using System.Text.Json;
 
 namespace HQTCSDLREPORT.Server.Services
@@ -9,7 +12,14 @@ namespace HQTCSDLREPORT.Server.Services
     {
         public static XtraReport Build(SqlReportStore.SqlReportItem reportItem, string reportUrl)
         {
-            var report = new Report(reportItem.DataTable)
+            var groupColumns = (reportItem.GroupOrder ?? Enumerable.Empty<ReportGroupOrderRequest>())
+                .OrderBy(x => x.Order ?? int.MaxValue)
+                .Select(x => x.ColumnName)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var report = new Report(reportItem.DataTable, reportItem.Title, string.Empty, groupColumns)
             {
                 DisplayName = reportUrl
             };

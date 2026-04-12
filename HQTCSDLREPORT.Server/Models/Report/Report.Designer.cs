@@ -56,6 +56,7 @@
             // 
             // ReportHeader
             // 
+            this.ReportHeader.HeightF = 49.16667F;
             this.ReportHeader.Name = "ReportHeader";
             // 
             // Report

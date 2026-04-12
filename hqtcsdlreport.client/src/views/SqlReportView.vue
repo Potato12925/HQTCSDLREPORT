@@ -80,11 +80,18 @@ const sql = ref("");
 const reportUrl = ref("");
 const reportTitle = ref("");
 const reportParameters = ref<Array<{ columnName: string; value: string }>>([]);
-const reportGroupOrder = ref<string[]>([]);
+const reportGroupOrder = ref<
+  Array<{
+    order?: number;
+    tableId?: number;
+    columnId?: number;
+    columnName?: string;
+  }>
+>([]);
 const preparing = ref(false);
 const errorMessage = ref("");
 const viewerHost = ref<HTMLElement | null>(null);
-const MIN_VIEWER_HEIGHT = 560;
+const MIN_VIEWER_HEIGHT = 1500;
 const viewerHeight = ref(MIN_VIEWER_HEIGHT);
 
 let viewerInstance: any = null;
@@ -158,8 +165,13 @@ function loadPayloadFromSession() {
     : [];
   reportGroupOrder.value = Array.isArray(payload.groupOrder)
     ? payload.groupOrder
-        .map((item) => String(item?.columnName || "").trim())
-        .filter((name) => name.length > 0)
+        .map((item, index) => ({
+          order: Number(item?.order ?? index + 1),
+          tableId: item?.tableId,
+          columnId: item?.columnId,
+          columnName: String(item?.columnName || "").trim(),
+        }))
+        .filter((item) => (item.columnName || "").length > 0)
     : [];
 
   if (!server.value || !database.value || !sql.value) {
