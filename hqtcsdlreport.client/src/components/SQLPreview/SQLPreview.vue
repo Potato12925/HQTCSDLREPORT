@@ -1,5 +1,16 @@
 <template>
-  <div class="p-4 bg-light shadow-md">
+  <div class="p-4 bg-light shadow-md relative">
+    <div class="mb-3">
+      <label for="report-title" class="mb-1 block text-sm font-medium text-dark">Report Title</label>
+      <input
+        id="report-title"
+        v-model="reportTitle"
+        type="text"
+        class="w-full rounded border border-primary/20 bg-white px-3 py-2 text-sm text-dark focus:outline-none focus:ring-2 focus:ring-primary/40"
+        placeholder="Enter report title"
+      />
+    </div>
+
     <div class="mb-2 flex items-center justify-between">
       <h3 class="text-lg font-semibold text-primary">SQL Preview</h3>
       <div class="flex items-center gap-2">
@@ -15,7 +26,7 @@
           type="button"
           class="inline-flex items-center gap-2 rounded bg-primary px-3 py-1 text-sm text-white hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
           :disabled="!canExecute"
-          @click="openReportTab"
+          @click="openCreateReportModal"
         >
           <span>Report</span>
         </button>
@@ -47,12 +58,28 @@
       class="bg-white text-dark p-3 overflow-auto text-sm rounded-xl shadow-sm border border-primary/10"
       >{{ sql }}</pre
     >
+
+    <div
+      v-if="showCreateReport"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4 py-8"
+      @click.self="closeCreateReportModal"
+    >
+      <CreateReport
+        :state="state"
+        :server="server"
+        :database="database"
+        :sql="sql"
+        :title="reportTitle"
+        @close="closeCreateReportModal"
+      />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
+import CreateReport from "@/components/CreateReport.vue";
 import type {
   QueryState,
   QueryTable,
@@ -70,6 +97,8 @@ const props = defineProps<{
 }>();
 const router = useRouter();
 const copyLabel = ref("Copy");
+const showCreateReport = ref(false);
+const reportTitle = ref("");
 let copyResetTimer: ReturnType<typeof setTimeout> | null = null;
 
 // ===================== HELPERS =====================
@@ -337,6 +366,15 @@ function createExecuteId(): string {
   return `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
+function hasReportConfig() {
+  for (const table of props.state.tables ?? []) {
+    for (const col of table.columns ?? []) {
+      if (col.parameterReport || col.groupReport) return true;
+    }
+  }
+  return false;
+}
+
 function openExecuteTab() {
   if (!canExecute.value) return;
 
@@ -347,6 +385,7 @@ function openExecuteTab() {
     sql: encodedSql,
     server: props.server,
     database: props.database,
+    title: reportTitle.value.trim(),
   };
 
   try {
@@ -367,9 +406,7 @@ function openExecuteTab() {
   window.open(route.href, "_blank");
 }
 
-function openReportTab() {
-  if (!canExecute.value) return;
-
+function openReportTabDirect() {
   const encodedSql = encodeURIComponent(sql.value);
   const id = createExecuteId();
   const storageKey = `report_${id}`;
@@ -377,13 +414,14 @@ function openReportTab() {
     sql: encodedSql,
     server: props.server,
     database: props.database,
+    title: reportTitle.value.trim(),
   };
 
   try {
     sessionStorage.setItem(storageKey, JSON.stringify(payload));
   } catch (error) {
     console.error("Failed to store report payload in sessionStorage.", error);
-    alert("Cannot open report tab because payload could not be stored.");
+    alert("Cannot open report tab because report payload could not be stored.");
     return;
   }
 
@@ -395,6 +433,21 @@ function openReportTab() {
   });
 
   window.open(route.href, "_blank");
+}
+
+function openCreateReportModal() {
+  if (!canExecute.value) return;
+
+  if (!hasReportConfig()) {
+    openReportTabDirect();
+    return;
+  }
+
+  showCreateReport.value = true;
+}
+
+function closeCreateReportModal() {
+  showCreateReport.value = false;
 }
 
 async function copySql() {

@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Data;
+using HQTCSDL.Models.Report;
 
 namespace HQTCSDLREPORT.Server.Services
 {
@@ -8,7 +9,14 @@ namespace HQTCSDLREPORT.Server.Services
         private readonly ConcurrentDictionary<string, SqlReportItem> _reports = new();
         private static readonly TimeSpan MaxAge = TimeSpan.FromMinutes(30);
 
-        public string Save(DataTable dataTable, string sql, string server, string database)
+        public string Save(
+            DataTable dataTable,
+            string sql,
+            string server,
+            string database,
+            string title,
+            IEnumerable<ReportParameterRequest>? parameters,
+            IEnumerable<ReportGroupOrderRequest>? groupOrder)
         {
             CleanupExpired();
 
@@ -19,6 +27,25 @@ namespace HQTCSDLREPORT.Server.Services
                 Sql = sql,
                 Server = server,
                 Database = database,
+                Title = title,
+                Parameters = (parameters ?? Enumerable.Empty<ReportParameterRequest>())
+                    .Select(x => new ReportParameterRequest
+                    {
+                        TableId = x.TableId,
+                        ColumnId = x.ColumnId,
+                        ColumnName = x.ColumnName,
+                        Value = x.Value
+                    })
+                    .ToList(),
+                GroupOrder = (groupOrder ?? Enumerable.Empty<ReportGroupOrderRequest>())
+                    .Select(x => new ReportGroupOrderRequest
+                    {
+                        Order = x.Order,
+                        TableId = x.TableId,
+                        ColumnId = x.ColumnId,
+                        ColumnName = x.ColumnName
+                    })
+                    .ToList(),
                 CreatedAtUtc = DateTime.UtcNow
             };
 
@@ -73,6 +100,12 @@ namespace HQTCSDLREPORT.Server.Services
             public string Server { get; set; } = string.Empty;
 
             public string Database { get; set; } = string.Empty;
+
+            public string Title { get; set; } = string.Empty;
+
+            public List<ReportParameterRequest> Parameters { get; set; } = new();
+
+            public List<ReportGroupOrderRequest> GroupOrder { get; set; } = new();
 
             public DateTime CreatedAtUtc { get; set; }
         }

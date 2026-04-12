@@ -54,17 +54,13 @@ import { useRoute } from "vue-router";
 import $ from "jquery";
 import ko from "knockout";
 import { prepareReportApi } from "@/api/dataApi";
-
-type SqlReportPayload = {
-  sql: string;
-  server?: string;
-  database?: string;
-};
+import type { SqlReportPayload } from "@/types/sqlReport";
 
 type PrepareReportResponse = {
   data?: {
     reportUrl?: string;
     RowCount?: string;
+    Columns?: string[];
   };
 };
 
@@ -82,10 +78,20 @@ const server = ref("");
 const database = ref("");
 const sql = ref("");
 const reportUrl = ref("");
+const reportTitle = ref("");
+const reportParameters = ref<Array<{ columnName: string; value: string }>>([]);
+const reportGroupOrder = ref<
+  Array<{
+    order?: number;
+    tableId?: number;
+    columnId?: number;
+    columnName?: string;
+  }>
+>([]);
 const preparing = ref(false);
 const errorMessage = ref("");
 const viewerHost = ref<HTMLElement | null>(null);
-const MIN_VIEWER_HEIGHT = 560;
+const MIN_VIEWER_HEIGHT = 1500;
 const viewerHeight = ref(MIN_VIEWER_HEIGHT);
 
 let viewerInstance: any = null;
@@ -147,6 +153,26 @@ function loadPayloadFromSession() {
   } catch {
     sql.value = encodedSql;
   }
+
+  reportTitle.value = String(payload.title || "").trim();
+  reportParameters.value = Array.isArray(payload.parameters)
+    ? payload.parameters
+        .map((item) => ({
+          columnName: String(item?.columnName || "").trim(),
+          value: String(item?.value || ""),
+        }))
+        .filter((item) => item.columnName.length > 0)
+    : [];
+  reportGroupOrder.value = Array.isArray(payload.groupOrder)
+    ? payload.groupOrder
+        .map((item, index) => ({
+          order: Number(item?.order ?? index + 1),
+          tableId: item?.tableId,
+          columnId: item?.columnId,
+          columnName: String(item?.columnName || "").trim(),
+        }))
+        .filter((item) => (item.columnName || "").length > 0)
+    : [];
 
   if (!server.value || !database.value || !sql.value) {
     errorMessage.value = "Missing server, database or sql in report payload.";
@@ -231,6 +257,9 @@ async function prepareAndLoadReport() {
       server: server.value,
       database: database.value,
       sql: normalizedSql,
+      title: reportTitle.value,
+      parameters: reportParameters.value,
+      groupOrder: reportGroupOrder.value,
     })) as PrepareReportResponse;
 
     reportUrl.value = response?.data?.reportUrl || "";

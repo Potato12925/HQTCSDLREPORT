@@ -1,5 +1,5 @@
 <template>
-  <div class="border border-primary/20 rounded-xl p-3 mb-3 bg-light">
+  <div class="bg-light rounded-2xl shadow p-4 mb-4">
     <!-- HEADER -->
     <div class="flex items-center justify-between mb-2">
       <div class="flex items-center gap-2">
@@ -11,7 +11,7 @@
         </select>
       </div>
 
-      <button v-if="removable" @click="$emit('remove')" class="text-red-500 text-sm">✕</button>
+      <button v-if="removable" @click="$emit('remove')" class="text-red-500 text-sm">x</button>
     </div>
 
     <!-- CONDITIONS -->
@@ -150,3 +150,4 @@ function removeCondition(index: number) {
   model.value.conditions.splice(index, 1);
 }
 </script>
+

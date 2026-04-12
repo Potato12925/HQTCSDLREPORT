@@ -24,6 +24,10 @@ export interface QueryColumn {
   aggregate?: "COUNT" | "SUM" | "AVG" | "MIN" | "MAX" | null;
 
   criteria?: Condition | null;
+
+  parameterReport?: boolean;
+
+  groupReport?: boolean;
 }
 
 // ===================== CONDITION =====================

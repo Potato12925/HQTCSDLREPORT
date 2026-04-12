@@ -38,7 +38,14 @@ namespace HQTCSDLREPORT.Server.Controllers
             try
             {
                 var dataTable = _metadataService.ExecuteSelectQueryAsDataTable(builder.ConnectionString, model.Sql);
-                var reportUrl = _sqlReportStore.Save(dataTable, model.Sql, model.Server, model.Database);
+                var reportUrl = _sqlReportStore.Save(
+                    dataTable,
+                    model.Sql,
+                    model.Server,
+                    model.Database,
+                    model.Title,
+                    model.Parameters,
+                    model.GroupOrder);
 
                 return Ok(new PrepareReportResponse
                 {
