@@ -91,6 +91,7 @@
 import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import type { QueryState, QueryColumn, QueryTable } from "@/types/queryState";
+import type { SqlReportPayload } from "@/types/sqlReport";
 
 type ReportColumnItem = {
   key: string;
@@ -207,7 +208,7 @@ function openReportTab() {
   const id = createReportId();
   const storageKey = `report_${id}`;
 
-  const payload = {
+  const payload: SqlReportPayload = {
     sql: encodedSql,
     server: props.server,
     database: props.database,

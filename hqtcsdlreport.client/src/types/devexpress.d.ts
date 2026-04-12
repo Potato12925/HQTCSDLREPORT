@@ -1,5 +1,3 @@
-// Type declarations for DevExpress modules
-
 declare module "devexpress-reporting/dist/css/dx-reporting-skeleton-screen.css";
 declare module "@devexpress/analytics-core/dist/css/dx-analytics.common.css";
 declare module "devexpress-reporting/dist/css/dx-webdocumentviewer.css";
