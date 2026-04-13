@@ -36,11 +36,7 @@
       >
         <!-- SHOW -->
         <label class="flex items-center justify-center text-xs text-dark">
-          <input
-            v-model="col.show"
-            type="checkbox"
-            class="w-5 h-5 cursor-pointer accent-primary"
-          />
+          <input v-model="col.show" type="checkbox" class="w-5 h-5 cursor-pointer accent-primary" />
         </label>
 
         <!-- COLUMN NAME -->
@@ -64,6 +60,7 @@
         <!-- ALIAS -->
         <input
           v-model="col.alias"
+          @input="col.alias = (col.alias || '').replace(/\s/g, '')"
           placeholder="alias"
           class="w-full border border-primary/20 px-2 py-1 rounded bg-light text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
         />
