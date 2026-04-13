@@ -1,12 +1,18 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "/api", 
-  withCredentials: true, 
+  baseURL: "/api",
+  withCredentials: true,
 });
 
 export const testApi = () => {
   return api.get("/Data/test");
+};
+
+export const getDatabasesApi = (server) => {
+  return api.get("/Data/databases", {
+    params: { server },
+  });
 };
 
 export const queryApi = () => {

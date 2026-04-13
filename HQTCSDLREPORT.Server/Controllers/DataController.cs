@@ -24,6 +24,32 @@ namespace HQTCSDL.Controllers
             return Ok(new { message = "Test API" });
         }
 
+        [HttpGet("databases")]
+        public IActionResult GetDatabases([FromQuery] string server)
+        {
+            if (string.IsNullOrWhiteSpace(server))
+            {
+                return BadRequest(new { message = "Server is required." });
+            }
+
+            var builder = new SqlConnectionStringBuilder
+            {
+                DataSource = server,
+                IntegratedSecurity = true,
+                TrustServerCertificate = true
+            };
+
+            try
+            {
+                var databases = _metadataService.GetDatabases(builder.ConnectionString);
+                return Ok(databases);
+            }
+            catch (SqlException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [HttpPost("connect")]
         public IActionResult Connect([FromBody] DbConnectionModel model)
         {

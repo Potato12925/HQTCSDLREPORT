@@ -1,53 +1,77 @@
 <template>
-
   <header class="bg-light shadow-md relative z-10">
     <nav class="mx-auto px-6 py-4 flex items-center justify-between">
+      <div class="text-xl font-bold text-primary">HQTCSDL</div>
+      <div class="flex items-end gap-4">
+        <!-- SERVER -->
+        <div class="flex flex-col">
+          <label class="text-xs text-dark mb-1">SERVER</label>
+          <input
+            v-model="server"
+            type="text"
+            placeholder="Nhập server"
+            :disabled="isConnected"
+            class="border border-primary bg-white rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+          />
+        </div>
 
-      <div class="text-xl font-bold text-primary">
-        HQTCSDL
-      </div>
+        <!-- BUTTON LOAD DB -->
+        <button
+          v-if="!isConnected"
+          @click="getdatabases"
+          :disabled="loadingDB"
+          class="bg-primary text-white px-4 py-1 rounded hover:bg-secondary transition disabled:opacity-50 h-[34px]"
+        >
+          {{ loadingDB ? "Đang tải..." : "Tải danh sách" }}
+        </button>
 
-      <div class="flex items-center gap-3">
-        <input
-          v-model="server"
-          type="text"
-          placeholder="Server"
-          :disabled="isConnected"
-          class="border border-primary bg-white rounded px-3 py-1
-                 focus:outline-none focus:ring-2 focus:ring-primary
-                 disabled:opacity-50"
-        />
+        <!-- DATABASE -->
+        <div class="flex flex-col">
+          <label class="text-xs text-dark mb-1">DATABASE</label>
 
-        <input
-          v-model="database"
-          type="text"
-          placeholder="Database"
-          :disabled="isConnected"
-          class="border border-primary bg-white rounded px-3 py-1
-                 focus:outline-none focus:ring-2 focus:ring-primary
-                 disabled:opacity-50"
-        />
+          <!-- SELECT -->
+          <select
+            v-if="listDatabase.length"
+            v-model="database"
+            :disabled="isConnected"
+            class="border border-primary bg-white rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+          >
+            <option disabled value="">-- Chọn database --</option>
+            <option v-for="db in listDatabase" :key="db" :value="db">
+              {{ db }}
+            </option>
+          </select>
 
+          <!-- INPUT fallback -->
+          <input
+            v-else
+            v-model="database"
+            type="text"
+            placeholder="Nhập database"
+            :disabled="isConnected"
+            class="border border-primary bg-white rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+          />
+        </div>
+
+        <!-- CONNECT -->
         <button
           v-if="!isConnected"
           @click="connect"
           :disabled="loading"
-          class="bg-primary text-white px-4 py-1 rounded
-                 hover:bg-secondary transition disabled:opacity-50"
+          class="bg-primary text-white px-4 py-1 rounded hover:bg-secondary transition disabled:opacity-50 h-[34px]"
         >
-          {{ loading ? 'Đang kết nối...' : 'Kết nối' }}
+          {{ loading ? "Đang kết nối..." : "Kết nối" }}
         </button>
 
-        <!-- DISCONNECT BUTTON -->
+        <!-- DISCONNECT -->
         <button
           v-else
           @click="disconnect"
-          class="bg-secondary text-white px-4 py-1 rounded hover:opacity-90"
+          class="bg-secondary text-white px-4 py-1 rounded hover:opacity-90 h-[34px]"
         >
           Ngắt kết nối
         </button>
       </div>
-
     </nav>
   </header>
 
@@ -71,75 +95,91 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { testApi } from "@/api/dataApi"
+import { ref, onMounted } from "vue";
+import { testApi, getDatabasesApi } from "@/api/dataApi";
 
-const server = ref('')
-const database = ref('')
-const isConnected = ref(false)
-const loading = ref(false)
+const server = ref("");
+const database = ref("");
+const listDatabase = ref([]);
+const isConnected = ref(false);
+const loading = ref(false);
+const loadingDB = ref(false);
+
+const getdatabases = async () => {
+  if (!server.value) {
+    alert("Vui lòng nhập server!");
+    return;
+  }
+  loadingDB.value = true;
+  try {
+    const res = await getDatabasesApi(server.value);
+    listDatabase.value = res.data || [];
+  } catch (err) {
+    console.error(err);
+    alert("Không thể lấy danh sách database!");
+  } finally {
+    loadingDB.value = false;
+  }
+};
 
 const connect = async () => {
   if (!server.value || !database.value) {
-    alert('Vui lòng nhập đầy đủ thông tin!')
-    return
+    alert("Vui lòng nhập đầy đủ thông tin!");
+    return;
   }
 
-  loading.value = true
+  loading.value = true;
 
   try {
     const res = await testApi({
       server: server.value,
-      database: database.value
-    })
-    console.log(res.data)
+      database: database.value,
+    });
+    console.log(res.data);
 
     if (res?.data?.message) {
-      isConnected.value = true
+      isConnected.value = true;
 
-      localStorage.setItem('server', server.value)
-      localStorage.setItem('database', database.value)
+      localStorage.setItem("server", server.value);
+      localStorage.setItem("database", database.value);
     } else {
-      alert('Kết nối thất bại!')
+      alert("Kết nối thất bại!");
     }
-
   } catch (err) {
-    console.error(err)
-    alert('Không thể kết nối server!')
+    console.error(err);
+    alert("Không thể kết nối server!");
   } finally {
-    loading.value = false
-    window.location.reload()
+    loading.value = false;
+    window.location.reload();
   }
-}
+};
 
 const disconnect = () => {
-  isConnected.value = false
-  localStorage.removeItem('server')
-  localStorage.removeItem('database')
+  isConnected.value = false;
+  localStorage.removeItem("server");
+  localStorage.removeItem("database");
 
-  window.location.reload()
-}
+  window.location.reload();
+};
 
 onMounted(async () => {
-  server.value = localStorage.getItem('server') || '(localdb)\\MSSQLLocalDB'
-  database.value = localStorage.getItem('database') || 'QLVT_DATHANG'
+  server.value = localStorage.getItem("server") || "(localdb)\\MSSQLLocalDB";
+  database.value = localStorage.getItem("database") || "QLVT_DATHANG";
 
-  const savedServer = localStorage.getItem('server')
-  const savedDatabase = localStorage.getItem('database')
+  const savedServer = localStorage.getItem("server");
+  const savedDatabase = localStorage.getItem("database");
 
   if (savedServer && savedDatabase) {
     try {
       const res = await testApi({
         server: savedServer,
-        database: savedDatabase
-      })
+        database: savedDatabase,
+      });
 
-      isConnected.value = !!res?.data?.message
-
+      isConnected.value = !!res?.data?.message;
     } catch {
-      isConnected.value = false
+      isConnected.value = false;
     }
   }
-})
+});
 </script>
-

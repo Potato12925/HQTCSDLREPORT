@@ -30,6 +30,27 @@ namespace HQTCSDL.Services
             }
         }
 
+        public List<string> GetDatabases(string connectionString)
+        {
+            var databases = new List<string>();
+
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                conn.Open();
+
+                using (SqlCommand cmd = new SqlCommand(QueryMetadata.getDatabaseQuery, conn))
+                using (SqlDataReader reader = cmd.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        databases.Add(reader.GetString(0));
+                    }
+                }
+            }
+
+            return databases;
+        }
+
         public DatabaseMetadata LoadMetadata(string connectionString)
         {
             DatabaseMetadata database = new DatabaseMetadata();
