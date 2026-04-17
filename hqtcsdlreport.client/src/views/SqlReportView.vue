@@ -155,23 +155,25 @@ function loadPayloadFromSession() {
   }
 
   reportTitle.value = String(payload.title || "").trim();
-  reportParameters.value = Array.isArray(payload.parameters)
-    ? payload.parameters
-        .map((item) => ({
-          columnName: String(item?.columnName || "").trim(),
-          value: String(item?.value || ""),
-        }))
-        .filter((item) => item.columnName.length > 0)
-    : [];
+
+  // Convert parameters dictionary to array format for display
+  reportParameters.value =
+    payload.parameters && typeof payload.parameters === "object"
+      ? Object.entries(payload.parameters)
+          .map(([columnName, value]) => ({
+            columnName: String(columnName || "").trim(),
+            value: String(value || ""),
+          }))
+          .filter((item) => item.columnName.length > 0)
+      : [];
+
   reportGroupOrder.value = Array.isArray(payload.groupOrder)
     ? payload.groupOrder
-        .map((item, index) => ({
-          order: Number(item?.order ?? index + 1),
-          tableId: item?.tableId,
-          columnId: item?.columnId,
-          columnName: String(item?.columnName || "").trim(),
+        .map((name, index) => ({
+          order: index + 1,
+          columnName: String(name || "").trim(),
         }))
-        .filter((item) => (item.columnName || "").length > 0)
+        .filter((item) => item.columnName.length > 0)
     : [];
 
   if (!server.value || !database.value || !sql.value) {
@@ -253,12 +255,18 @@ async function prepareAndLoadReport() {
 
   try {
     const normalizedSql = sql.value.replace(/\r?\n/g, " ").trim();
+
+    // Convert parameters array back to dictionary for API
+    const parametersDict = Object.fromEntries(
+      reportParameters.value.map((param) => [param.columnName, param.value]),
+    );
+
     const response = (await prepareReportApi({
       server: server.value,
       database: database.value,
       sql: normalizedSql,
       title: reportTitle.value,
-      parameters: reportParameters.value,
+      parameters: parametersDict,
       groupOrder: reportGroupOrder.value,
     })) as PrepareReportResponse;
 

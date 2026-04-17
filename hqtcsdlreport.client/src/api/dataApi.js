@@ -15,10 +15,6 @@ export const getDatabasesApi = (server) => {
   });
 };
 
-export const queryApi = () => {
-  return api.get("/Data/query");
-};
-
 export const connectDbApi = (data) => {
   return api.post("/Data/connect", data);
 };

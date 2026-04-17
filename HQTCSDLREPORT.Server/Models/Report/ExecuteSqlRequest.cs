@@ -4,17 +4,16 @@ namespace HQTCSDL.Models.Report
 {
     public class ExecuteSqlRequest
     {
-        [DefaultValue("(localdb)\\MSSQLLocalDB")]   
+        [DefaultValue("(localdb)\\MSSQLLocalDB")]
         public string Server { get; set; } = string.Empty;
         [DefaultValue("QLVT_DATHANG")]
         public string Database { get; set; } = string.Empty;
         public string Sql { get; set; } = string.Empty;
 
         public string Title { get; set; } = string.Empty;
+        public Dictionary<string, string>? Parameters { get; set; }
 
-        public List<ReportParameterRequest> Parameters { get; set; } = new();
-
-        public List<ReportGroupOrderRequest> GroupOrder { get; set; } = new();
+        public List<string> GroupOrder { get; set; } = new();
     }
 
     public class ReportParameterRequest

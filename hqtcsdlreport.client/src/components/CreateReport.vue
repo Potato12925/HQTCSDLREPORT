@@ -10,6 +10,14 @@
         Close
       </button>
     </div>
+    <section class="mb-4">
+      <h4 class="mb-1 text-sm font-semibold text-dark/80">Report Title</h4>
+
+      <input
+        v-model="title"
+        class="w-full border border-primary/20 px-2 py-1 rounded bg-light text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+      />
+    </section>
 
     <!-- PARAMETER -->
     <section v-if="parameterColumns.length > 0">
@@ -92,6 +100,7 @@ import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import type { QueryState, QueryColumn, QueryTable } from "@/types/queryState";
 import type { SqlReportPayload } from "@/types/sqlReport";
+import { executeSqlApi } from "@/api/dataApi";
 
 type ReportColumnItem = {
   key: string;
@@ -99,6 +108,7 @@ type ReportColumnItem = {
   tableId: number;
   columnId: number;
   columnName: string;
+  alias?: string | null;
 };
 
 const props = defineProps<{
@@ -118,6 +128,7 @@ const router = useRouter();
 const parameterValues = ref<Record<string, string>>({});
 const groupOrder = ref<ReportColumnItem[]>([]);
 
+const title = ref(props.title ?? "");
 const canSubmit = computed(() => {
   return !!props.sql?.trim() && !!props.server?.trim() && !!props.database?.trim();
 });
@@ -125,24 +136,80 @@ const canSubmit = computed(() => {
 function toItem(table: QueryTable, col: QueryColumn): ReportColumnItem {
   return {
     key: `${table.id}_${col.column.columnId}`,
-    label: `${table.alias || table.tableName}.${col.column.columnName}`,
+    label: `${table.alias || table.tableName}.${col.alias || col.column.columnName}`,
     tableId: table.id,
     columnId: col.column.columnId,
     columnName: col.column.columnName,
+    alias: col.alias,
   };
 }
 
 const parameterColumns = computed<ReportColumnItem[]>(() => {
-  const items: ReportColumnItem[] = [];
-  for (const table of props.state.tables ?? []) {
-    for (const col of table.columns) {
-      if (!col.parameterReport) continue;
-      items.push(toItem(table, col));
-    }
-  }
-  return items;
+  const result: ReportColumnItem[] = [];
+
+  props.state.tables?.forEach((table: QueryTable) => {
+    table.columns.forEach((col: QueryColumn) => {
+      if (col.parameterReport) {
+        result.push({
+          key: `${table.id}_${col.column.columnId}`,
+          label: `@${col.alias || col.column.columnName}`,
+          tableId: table.id,
+          columnId: col.column.columnId,
+          columnName: col.column.columnName,
+          alias: col.alias,
+        });
+      }
+    });
+  });
+
+  return result;
 });
 
+const buildParameterSql = () => {
+  if (!props.sql) return "";
+
+  const paramCols = parameterColumns.value;
+
+  if (paramCols.length === 0) return "";
+
+  const selectParams = paramCols.map((c) => `[${c.columnName}]`).join(", ");
+
+  // replace SELECT ... FROM
+  const sql = props.sql.replace(/select\s+[\s\S]*?\s+from/i, `SELECT ${selectParams} FROM`);
+
+  return sql;
+};
+const loadParameterValues = async () => {
+  try {
+    const sql = buildParameterSql();
+    if (!sql) return;
+
+    const res = await executeSqlApi({
+      server: props.server,
+      database: props.database,
+      sql,
+    });
+
+    console.log("API RESULT:", JSON.stringify(res, null, 2));
+
+    const rows = res?.data?.rows ?? [];
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+      console.warn("No parameter data returned");
+      return;
+    }
+    parameterColumns.value.forEach((col) => {
+      const values = rows
+        .map((row) => row?.[col.columnName])
+        .filter((v) => v !== undefined && v !== null && v !== "")
+        .map((v) => v.toString().trim());
+
+      parameterValues.value[col.key] = values.join(", ");
+    });
+  } catch (err) {
+    console.error("loadParameterValues error:", err);
+  }
+};
 const groupColumns = computed<ReportColumnItem[]>(() => {
   const items: ReportColumnItem[] = [];
   for (const table of props.state.tables ?? []) {
@@ -155,13 +222,24 @@ const groupColumns = computed<ReportColumnItem[]>(() => {
 });
 
 watch(
-  parameterColumns,
-  (nextColumns) => {
+  () => parameterColumns.value,
+  async (nextColumns, prevColumns) => {
     const nextValues: Record<string, string> = {};
+
     for (const col of nextColumns) {
       nextValues[col.key] = parameterValues.value[col.key] ?? "";
     }
+
     parameterValues.value = nextValues;
+
+    // ✅ check có column mới không
+    const hasNewColumn =
+      !prevColumns || nextColumns.some((c) => !prevColumns.find((p) => p.key === c.key));
+
+    // ✅ chỉ call API khi cần
+    if (hasNewColumn && nextColumns.length > 0) {
+      await loadParameterValues();
+    }
   },
   { immediate: true },
 );
@@ -180,7 +258,6 @@ watch(
   },
   { immediate: true },
 );
-
 function moveGroup(index: number, offset: -1 | 1) {
   const toIndex = index + offset;
   if (toIndex < 0 || toIndex >= groupOrder.value.length) return;
@@ -208,25 +285,25 @@ function openReportTab() {
   const id = createReportId();
   const storageKey = `report_${id}`;
 
+  const parameters = Object.fromEntries(
+    parameterColumns.value.map((col) => [
+      `@${(col.alias || col.columnName).toUpperCase()}`,
+      parameterValues.value[col.key] ?? "",
+    ]),
+  );
+
   const payload: SqlReportPayload = {
     sql: encodedSql,
     server: props.server,
     database: props.database,
-    title: props.title?.trim() ?? "",
-    parameters: parameterColumns.value.map((col) => ({
-      tableId: col.tableId,
-      columnId: col.columnId,
-      columnName: col.columnName,
-      value: parameterValues.value[col.key] ?? "",
-    })),
-    groupOrder: groupOrder.value.map((col, index) => ({
-      order: index + 1,
-      tableId: col.tableId,
-      columnId: col.columnId,
-      columnName: col.columnName,
-    })),
+    title: title.value.trim() ?? "",
+    parameters,
+
+    groupOrder: groupOrder.value.map((col) => col.alias || col.columnName),
   };
+
   console.log("Report Payload:", JSON.stringify(payload, null, 2));
+
   try {
     sessionStorage.setItem(storageKey, JSON.stringify(payload));
   } catch (error) {
@@ -237,9 +314,7 @@ function openReportTab() {
 
   const route = router.resolve({
     name: "SqlReport",
-    query: {
-      id,
-    },
+    query: { id },
   });
 
   window.open(route.href, "_blank");

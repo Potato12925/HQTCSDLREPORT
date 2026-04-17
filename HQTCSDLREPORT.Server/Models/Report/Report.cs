@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace HQTCSDLREPORT.Server
 {
@@ -23,11 +24,11 @@ namespace HQTCSDLREPORT.Server
             ApplyDataTable(dt, Array.Empty<string>());
         }
 
-        public Report(DataTable dt, string title, string parameter, List<string> groupBy) : this()
+        public Report(DataTable dt, string title, Dictionary<string, string>? parameters, List<string> groupBy) : this()
         {
             var normalizedGroups = NormalizeGroupColumns(dt, groupBy);
             ApplyDataTable(dt, normalizedGroups);
-            ApplyHeader(title, parameter, normalizedGroups);
+            ApplyHeader(title, parameters, normalizedGroups);
         }
 
         public void ApplyDataTable(DataTable dt, IEnumerable<string> groupColumns)
@@ -198,9 +199,25 @@ namespace HQTCSDLREPORT.Server
                 Bands.Add(groupHeader);
             }
         }
-        private void ApplyHeader(string title, string parameter, List<string> groupBy)
+        private void ApplyHeader(string title, Dictionary<string, string>? parameters, List<string> groupBy)
         {
             _ = groupBy;
+
+            if (!string.IsNullOrWhiteSpace(title) && parameters != null && parameters.Count > 0)
+            {
+                title = Regex.Replace(title, @"@\w+", match =>
+                {
+                    var key = match.Value; // ví dụ: @THAMSO
+
+                    // tìm trong dictionary (ignore case nếu cần)
+                    var found = parameters
+                        .FirstOrDefault(p => string.Equals(p.Key, key, StringComparison.OrdinalIgnoreCase));
+
+                    return !string.IsNullOrEmpty(found.Key)
+                        ? (found.Value ?? string.Empty)
+                        : key; // nếu không có thì giữ nguyên
+                });
+            }
 
             // ================= REPORT HEADER =================
             var reportHeader = Bands.GetBandByType(typeof(ReportHeaderBand)) as ReportHeaderBand;
@@ -215,39 +232,20 @@ namespace HQTCSDLREPORT.Server
 
             // ================= TITLE =================
             var printableWidth = PageWidth - Margins.Left - Margins.Right;
+
             var titleLabel = new XRLabel
             {
-
                 BoundsF = new RectangleF(0, 0, printableWidth, 40f),
                 Text = title ?? string.Empty,
                 Font = new Font("Arial", 16, FontStyle.Bold),
                 TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleCenter,
-
                 Multiline = true,
                 WordWrap = true,
                 CanGrow = true
             };
 
             reportHeader.HeightF = 80f;
-
             reportHeader.Controls.Add(titleLabel);
-
-            // ================= PARAMETER (FILTER) =================
-            // if (!string.IsNullOrWhiteSpace(parameter))
-            // {
-            //     var paramLabel = new XRLabel
-            //     {
-            //         BoundsF = new RectangleF(0, 30f, PageWidth - Margins.Left - Margins.Right, 20f),
-            //         Font = new Font("Arial", 10, FontStyle.Italic),
-            //         TextAlignment = DevExpress.XtraPrinting.TextAlignment.MiddleCenter,
-            //         Text = $"Filter: {parameter}"
-            //     };
-
-            //     reportHeader.Controls.Add(paramLabel);
-
-            //     // vẫn giữ filter logic
-            //     FilterString = parameter;
-            // }
         }
     }
 }

@@ -36,7 +36,12 @@
       >
         <!-- SHOW -->
         <label class="flex items-center justify-center text-xs text-dark">
-          <input v-model="col.show" type="checkbox" class="w-5 h-5 cursor-pointer accent-primary" />
+          <input
+            v-model="col.show"
+            type="checkbox"
+            class="w-5 h-5 cursor-pointer accent-primary"
+            @change="onChangeShow(col)"
+          />
         </label>
 
         <!-- COLUMN NAME -->
@@ -71,6 +76,7 @@
             v-model="col.parameterReport"
             type="checkbox"
             class="w-5 h-5 cursor-pointer accent-primary"
+            @change="onChangParameterReport(col)"
           />
         </label>
 
@@ -80,6 +86,7 @@
             v-model="col.groupReport"
             type="checkbox"
             class="w-5 h-5 cursor-pointer accent-primary"
+            @change="onchangeGroupReport(col)"
           />
         </label>
       </div>
@@ -106,6 +113,28 @@ const props = defineProps<{
 const tables = computed<QueryTable[]>(() => {
   return props.state.tables ?? [];
 });
+
+const onChangParameterReport = (col: QueryColumn) => {
+  if (col.parameterReport) {
+    col.show = false;
+    col.groupReport = false;
+  }
+};
+const onChangeShow = (col: QueryColumn) => {
+  if (col.show) {
+    col.parameterReport = false;
+  } else {
+    if (col.groupReport) {
+      col.groupReport = false;
+    }
+  }
+};
+const onchangeGroupReport = (col: QueryColumn) => {
+  if (col.groupReport) {
+    col.show = true;
+    col.parameterReport = false;
+  }
+};
 </script>
 
 <style scoped>

@@ -12,14 +12,13 @@ namespace HQTCSDLREPORT.Server.Services
     {
         public static XtraReport Build(SqlReportStore.SqlReportItem reportItem, string reportUrl)
         {
-            var groupColumns = (reportItem.GroupOrder ?? Enumerable.Empty<ReportGroupOrderRequest>())
-                .OrderBy(x => x.Order ?? int.MaxValue)
-                .Select(x => x.ColumnName)
+            var groupColumns = (reportItem.GroupOrder ?? Enumerable.Empty<string>())
                 .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => x.Trim())
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            var report = new Report(reportItem.DataTable, reportItem.Title, string.Empty, groupColumns)
+            var report = new Report(reportItem.DataTable, reportItem.Title, reportItem.Parameters, groupColumns)
             {
                 DisplayName = reportUrl
             };
@@ -28,15 +27,20 @@ namespace HQTCSDLREPORT.Server.Services
                 .Cast<DataRow>()
                 .Select(row => reportItem.DataTable.Columns
                     .Cast<DataColumn>()
-                    .ToDictionary(col => col.ColumnName, col => row[col] == DBNull.Value ? null : row[col]))
+                    .ToDictionary(
+                        col => col.ColumnName,
+                        col => row[col] == DBNull.Value ? null : row[col]
+                    ))
                 .ToList();
 
             var json = JsonSerializer.Serialize(rows);
+
             var jsonDataSource = new JsonDataSource
             {
                 Name = "SqlResult",
                 JsonSource = new CustomJsonSource(json)
             };
+
             jsonDataSource.Fill();
 
             report.ComponentStorage.Add(jsonDataSource);

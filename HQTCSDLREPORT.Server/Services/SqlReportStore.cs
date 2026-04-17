@@ -15,12 +15,14 @@ namespace HQTCSDLREPORT.Server.Services
             string server,
             string database,
             string title,
-            IEnumerable<ReportParameterRequest>? parameters,
-            IEnumerable<ReportGroupOrderRequest>? groupOrder)
+            Dictionary<string, string>? parameters,
+            IEnumerable<string>? groupOrder
+            )
         {
             CleanupExpired();
 
             var reportId = $"sql-report-{Guid.NewGuid():N}";
+
             _reports[reportId] = new SqlReportItem
             {
                 DataTable = dataTable.Copy(),
@@ -28,24 +30,14 @@ namespace HQTCSDLREPORT.Server.Services
                 Server = server,
                 Database = database,
                 Title = title,
-                Parameters = (parameters ?? Enumerable.Empty<ReportParameterRequest>())
-                    .Select(x => new ReportParameterRequest
-                    {
-                        TableId = x.TableId,
-                        ColumnId = x.ColumnId,
-                        ColumnName = x.ColumnName,
-                        Value = x.Value
-                    })
+
+                Parameters = parameters ?? new Dictionary<string, string>(),
+
+                GroupOrder = (groupOrder ?? Enumerable.Empty<string>())
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .Select(x => x.Trim())
                     .ToList(),
-                GroupOrder = (groupOrder ?? Enumerable.Empty<ReportGroupOrderRequest>())
-                    .Select(x => new ReportGroupOrderRequest
-                    {
-                        Order = x.Order,
-                        TableId = x.TableId,
-                        ColumnId = x.ColumnId,
-                        ColumnName = x.ColumnName
-                    })
-                    .ToList(),
+
                 CreatedAtUtc = DateTime.UtcNow
             };
 
@@ -103,9 +95,9 @@ namespace HQTCSDLREPORT.Server.Services
 
             public string Title { get; set; } = string.Empty;
 
-            public List<ReportParameterRequest> Parameters { get; set; } = new();
+            public Dictionary<string, string>? Parameters { get; set; }
 
-            public List<ReportGroupOrderRequest> GroupOrder { get; set; } = new();
+            public List<string> GroupOrder { get; set; } = new();
 
             public DateTime CreatedAtUtc { get; set; }
         }
