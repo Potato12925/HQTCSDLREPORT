@@ -94,7 +94,6 @@ const having = computed<HavingClause>({
     props.state.having = val;
   },
 });
-
 function inferAliasType(
   dataType: ColumnDataType | undefined,
   aggregate: "COUNT" | "SUM" | "AVG" | "MIN" | "MAX" | null | undefined,

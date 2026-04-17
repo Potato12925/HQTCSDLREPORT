@@ -2,11 +2,7 @@
   <div class="bg-white rounded-2xl shadow p-4 mb-4">
     <h3 class="font-semibold text-primary mb-3 text-lg">WHERE</h3>
 
-    <ConditionGroupBuilder
-      v-if="where"
-      v-model="where.group"
-      :columns="columns"
-    />
+    <ConditionGroupBuilder v-if="where" v-model="where.group" :columns="columns" />
   </div>
 </template>
 

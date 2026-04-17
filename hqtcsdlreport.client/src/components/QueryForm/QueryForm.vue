@@ -19,7 +19,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, watch } from "vue";
 import type { QueryState, ColumnRef } from "@/types/queryState";
 import SelectBuilder from "@/components/QueryForm/SelectBuilder/SelectBuilder.vue";
 import WhereBuilder from "@/components/QueryForm/WhereBuilder/WhereBuilder.vue";
@@ -30,6 +30,26 @@ import HavingBuilder from "./HavingBuilder/HavingBuilder.vue";
 const props = defineProps<{
   queryState: QueryState;
 }>();
+
+const resetStateWhenNoTables = () => {
+  props.queryState.from = undefined;
+  props.queryState.joins = undefined;
+  props.queryState.where = undefined;
+  props.queryState.groupBy = undefined;
+  props.queryState.having = undefined;
+  props.queryState.orderBy = undefined;
+};
+
+watch(
+  () => props.queryState.tables?.length ?? 0,
+  (tableCount) => {
+    if (tableCount === 0) {
+      resetStateWhenNoTables();
+    }
+  },
+  { immediate: true },
+);
+
 const hasTables = computed(() => {
   const tables = props.queryState.tables;
   return !!tables && tables.length > 0;
