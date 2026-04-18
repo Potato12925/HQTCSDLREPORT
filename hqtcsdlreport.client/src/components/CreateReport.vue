@@ -107,8 +107,6 @@ type ReportColumnItem = {
   label: string;
   tableId: number;
   columnId: number;
-  columnName: string;
-  alias?: string | null;
 };
 
 const props = defineProps<{
@@ -133,14 +131,26 @@ const canSubmit = computed(() => {
   return !!props.sql?.trim() && !!props.server?.trim() && !!props.database?.trim();
 });
 
+function findColumnSource(item: ReportColumnItem) {
+  const table = (props.state.tables ?? []).find((t) => t.id === item.tableId);
+  if (!table) return null;
+
+  const col = table.columns.find((c) => c.column.columnId === item.columnId);
+  if (!col) return null;
+
+  return {
+    tableRef: table.alias?.trim() || table.tableName,
+    columnRef: col.column.columnName,
+    outputName: col.alias?.trim() || col.column.columnName,
+  };
+}
+
 function toItem(table: QueryTable, col: QueryColumn): ReportColumnItem {
   return {
     key: `${table.id}_${col.column.columnId}`,
     label: `${table.alias || table.tableName}.${col.alias || col.column.columnName}`,
     tableId: table.id,
     columnId: col.column.columnId,
-    columnName: col.column.columnName,
-    alias: col.alias,
   };
 }
 
@@ -152,11 +162,9 @@ const parameterColumns = computed<ReportColumnItem[]>(() => {
       if (col.parameterReport) {
         result.push({
           key: `${table.id}_${col.column.columnId}`,
-          label: `@${col.alias || col.column.columnName}`,
+          label: `@${(col.alias || col.column.columnName).toUpperCase()}`,
           tableId: table.id,
           columnId: col.column.columnId,
-          columnName: col.column.columnName,
-          alias: col.alias,
         });
       }
     });
@@ -172,15 +180,30 @@ const buildParameterSql = () => {
 
   if (paramCols.length === 0) return "";
 
-  const selectParams = paramCols.map((c) => `[${c.columnName}]`).join(", ");
+  const selectParams = paramCols
+    .map((c) => {
+      const source = findColumnSource(c);
+      if (!source) return null;
+      return `${source.tableRef}.[${source.columnRef}] AS [${c.key}]`;
+    })
+    .filter((x): x is string => !!x)
+    .join(", ");
+
+  if (!selectParams) return "";
 
   // replace SELECT ... FROM
   const sql = props.sql.replace(/select\s+[\s\S]*?\s+from/i, `SELECT ${selectParams} FROM`);
 
   return sql;
 };
+
 const loadParameterValues = async () => {
   try {
+    if (!props.server?.trim() || !props.database?.trim()) {
+      console.warn("Server and Database are required");
+      return;
+    }
+
     const sql = buildParameterSql();
     if (!sql) return;
 
@@ -199,12 +222,18 @@ const loadParameterValues = async () => {
       return;
     }
     parameterColumns.value.forEach((col) => {
+      const source = findColumnSource(col);
       const values = rows
-        .map((row) => row?.[col.columnName])
+        .map((row) => {
+          if (row?.[col.key] !== undefined) return row[col.key];
+          if (source?.outputName && row?.[source.outputName] !== undefined) return row[source.outputName];
+          if (source?.columnRef && row?.[source.columnRef] !== undefined) return row[source.columnRef];
+          return undefined;
+        })
         .filter((v) => v !== undefined && v !== null && v !== "")
         .map((v) => v.toString().trim());
 
-      parameterValues.value[col.key] = values.join(", ");
+      parameterValues.value[col.key] = Array.from(new Set(values)).join(", ");
     });
   } catch (err) {
     console.error("loadParameterValues error:", err);
@@ -287,7 +316,7 @@ function openReportTab() {
 
   const parameters = Object.fromEntries(
     parameterColumns.value.map((col) => [
-      `@${(col.alias || col.columnName).toUpperCase()}`,
+      `@${(findColumnSource(col)?.outputName || col.label.replace(/^@/, "")).toUpperCase()}`,
       parameterValues.value[col.key] ?? "",
     ]),
   );
@@ -299,7 +328,7 @@ function openReportTab() {
     title: title.value.trim() ?? "",
     parameters,
 
-    groupOrder: groupOrder.value.map((col) => col.alias || col.columnName),
+    groupOrder: groupOrder.value.map((col) => findColumnSource(col)?.outputName || col.label),
   };
 
   console.log("Report Payload:", JSON.stringify(payload, null, 2));

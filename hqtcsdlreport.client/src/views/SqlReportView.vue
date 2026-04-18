@@ -80,14 +80,7 @@ const sql = ref("");
 const reportUrl = ref("");
 const reportTitle = ref("");
 const reportParameters = ref<Array<{ columnName: string; value: string }>>([]);
-const reportGroupOrder = ref<
-  Array<{
-    order?: number;
-    tableId?: number;
-    columnId?: number;
-    columnName?: string;
-  }>
->([]);
+const reportGroupOrder = ref<string[]>([]);
 const preparing = ref(false);
 const errorMessage = ref("");
 const viewerHost = ref<HTMLElement | null>(null);
@@ -167,13 +160,17 @@ function loadPayloadFromSession() {
           .filter((item) => item.columnName.length > 0)
       : [];
 
-  reportGroupOrder.value = Array.isArray(payload.groupOrder)
-    ? payload.groupOrder
-        .map((name, index) => ({
-          order: index + 1,
-          columnName: String(name || "").trim(),
-        }))
-        .filter((item) => item.columnName.length > 0)
+  const rawGroupOrder = (payload as { groupOrder?: unknown }).groupOrder;
+  reportGroupOrder.value = Array.isArray(rawGroupOrder)
+    ? rawGroupOrder
+        .map((item) => {
+          if (typeof item === "string") return item.trim();
+          if (item && typeof item === "object" && "columnName" in item) {
+            return String((item as { columnName?: unknown }).columnName ?? "").trim();
+          }
+          return "";
+        })
+        .filter((name) => name.length > 0)
     : [];
 
   if (!server.value || !database.value || !sql.value) {

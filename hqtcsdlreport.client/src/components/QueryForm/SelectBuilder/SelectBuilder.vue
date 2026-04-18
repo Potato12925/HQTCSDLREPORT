@@ -114,15 +114,55 @@ const tables = computed<QueryTable[]>(() => {
   return props.state.tables ?? [];
 });
 
+const getColumnName = (column: QueryColumn) => {
+  const raw = (column.column as { name?: string; columnName?: string } | undefined) ?? {};
+  return (raw.name ?? raw.columnName ?? "").trim().toLowerCase();
+};
+
 const onChangParameterReport = (col: QueryColumn) => {
   if (col.parameterReport) {
     col.show = false;
     col.groupReport = false;
+
+    const selectedColumnName = getColumnName(col);
+    if (!selectedColumnName) return;
+
+    for (const table of tables.value) {
+      for (const tableCol of table.columns) {
+        if (tableCol === col) continue;
+        if (getColumnName(tableCol) !== selectedColumnName) continue;
+
+        // Tắt parameterReport của cột khác cùng tên đang bật
+        if (tableCol.parameterReport) {
+          tableCol.parameterReport = false;
+          onChangParameterReport(tableCol);
+        }
+
+        // Tắt show nếu đang bật
+        if (tableCol.show) {
+          tableCol.show = false;
+          onChangeShow(tableCol);
+        }
+      }
+    }
   }
 };
 const onChangeShow = (col: QueryColumn) => {
   if (col.show) {
     col.parameterReport = false;
+
+    const selectedColumnName = getColumnName(col);
+    if (selectedColumnName) {
+      for (const table of tables.value) {
+        for (const tableCol of table.columns) {
+          if (tableCol === col) continue;
+          if (getColumnName(tableCol) !== selectedColumnName) continue;
+          if (!tableCol.parameterReport) continue;
+
+          tableCol.parameterReport = false;
+        }
+      }
+    }
   } else {
     if (col.groupReport) {
       col.groupReport = false;
@@ -133,6 +173,20 @@ const onchangeGroupReport = (col: QueryColumn) => {
   if (col.groupReport) {
     col.show = true;
     col.parameterReport = false;
+
+    const selectedColumnName = getColumnName(col);
+    if (!selectedColumnName) return;
+
+    for (const table of tables.value) {
+      for (const tableCol of table.columns) {
+        if (tableCol === col) continue;
+        if (getColumnName(tableCol) !== selectedColumnName) continue;
+
+        if (tableCol.groupReport) {
+          tableCol.groupReport = false;
+        }
+      }
+    }
   }
 };
 </script>
