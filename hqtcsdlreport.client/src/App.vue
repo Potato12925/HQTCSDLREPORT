@@ -163,7 +163,7 @@ const disconnect = () => {
 };
 
 onMounted(async () => {
-  server.value = localStorage.getItem("server") || "DESKTOP-LPDM3UE";
+  server.value = localStorage.getItem("server") || "POTATO";
   database.value = localStorage.getItem("database") || "QLVT_DATHANG";
 
   const savedServer = localStorage.getItem("server");

@@ -1,5 +1,5 @@
 <template>
-  <div class="flex gap-2 items-center">
+  <div class="flex gap-2 items-center bg-white border border-primary/20 rounded-xl p-2">
     <!-- COLUMN -->
     <select v-model="selectedColumn" class="input">
       <option disabled value="">Select column</option>
@@ -47,7 +47,7 @@
       class="input"
     />
 
-    <button @click="$emit('remove')" class="text-red-500">x</button>
+    <button @click="$emit('remove')" class="text-red-500 ml-auto">✕</button>
   </div>
 </template>
 

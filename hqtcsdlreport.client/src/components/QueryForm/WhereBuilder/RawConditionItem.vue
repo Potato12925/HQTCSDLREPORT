@@ -1,5 +1,5 @@
 <template>
-  <div class="flex gap-2 items-center">
+  <div class="flex gap-2 items-center bg-white border border-primary/20 rounded-xl p-2">
     <input v-model="model.sql" placeholder="RAW SQL..." class="input w-full" />
 
     <button @click="$emit('remove')" class="text-red-500">✕</button>

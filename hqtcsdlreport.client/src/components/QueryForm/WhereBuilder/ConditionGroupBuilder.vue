@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-light rounded-2xl shadow p-4 mb-4">
+  <div class="bg-light/30 rounded-2xl shadow p-4 mb-4">
     <!-- HEADER -->
     <div class="flex items-center justify-between mb-2">
       <div class="flex items-center gap-2">
@@ -11,7 +11,7 @@
         </select>
       </div>
 
-      <button v-if="removable" @click="$emit('remove')" class="text-red-500 text-sm">x</button>
+      <button v-if="removable" @click="$emit('remove')" class="text-red-500">✕</button>
     </div>
 
     <!-- CONDITIONS -->

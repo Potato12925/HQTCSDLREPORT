@@ -1,5 +1,5 @@
 <template>
-  <div class="border border-primary/20 rounded-xl p-3 mb-3 bg-light">
+  <div class="border border-primary/20 rounded-xl p-3 mb-3 bg-white">
     <div class="flex items-center justify-between mb-2">
       <div class="flex items-center gap-2">
         <span class="font-semibold text-primary">GROUP</span>
