@@ -1,8 +1,8 @@
 <template>
-  <div class="flex gap-2 items-center bg-white border border-primary/20 rounded-xl p-2">
+  <div class="flex gap-2 items-center bg-light border border-primary/20 rounded-xl p-2">
     <!-- COLUMN -->
     <select v-model="selectedColumn" class="input">
-      <option disabled value="">Select column</option>
+      <option disabled value="null">Select column</option>
 
       <option v-for="col in columns" :key="col.columnId + '-' + col.tableId" :value="col">
         {{ col.label }}
@@ -10,42 +10,44 @@
     </select>
 
     <!-- OPERATOR -->
-    <select v-model="model.operator" class="input">
+    <select v-if="hasSelectedColumn" v-model="model.operator" class="input">
       <option v-for="op in operators" :key="op" :value="op">
         {{ op }}
       </option>
     </select>
 
     <!-- VALUE -->
-    <select
-      v-if="columnType === 'boolean' && !noValueOperators.includes(model.operator)"
-      v-model="model.value"
-      class="input"
-    >
-      <option :value="true">True</option>
-      <option :value="false">False</option>
-    </select>
+    <template v-if="hasSelectedColumn">
+      <select
+        v-if="columnType === 'boolean' && !noValueOperators.includes(model.operator)"
+        v-model="model.value"
+        class="input"
+      >
+        <option :value="true">True</option>
+        <option :value="false">False</option>
+      </select>
 
-    <template v-else-if="model.operator === 'BETWEEN'">
-      <input v-model="betweenValue[0]" :type="inputType" placeholder="min" class="input w-24" />
-      <span class="text-xs text-dark">AND</span>
-      <input v-model="betweenValue[1]" :type="inputType" placeholder="max" class="input w-24" />
+      <template v-else-if="model.operator === 'BETWEEN'">
+        <input v-model="betweenValue[0]" :type="inputType" placeholder="min" class="input w-24" />
+        <span class="text-xs text-dark">AND</span>
+        <input v-model="betweenValue[1]" :type="inputType" placeholder="max" class="input w-24" />
+      </template>
+
+      <input
+        v-else-if="model.operator === 'IN'"
+        v-model="inValue"
+        placeholder="a, b, c"
+        class="input min-w-[140px]"
+      />
+
+      <input
+        v-else-if="columnType !== 'other' && !noValueOperators.includes(model.operator)"
+        v-model="model.value"
+        :type="inputType"
+        placeholder="value"
+        class="input"
+      />
     </template>
-
-    <input
-      v-else-if="model.operator === 'IN'"
-      v-model="inValue"
-      placeholder="a, b, c"
-      class="input min-w-[140px]"
-    />
-
-    <input
-      v-else-if="columnType !== 'other' && !noValueOperators.includes(model.operator)"
-      v-model="model.value"
-      :type="inputType"
-      placeholder="value"
-      class="input"
-    />
 
     <button @click="$emit('remove')" class="text-red-500 ml-auto">✕</button>
   </div>
@@ -101,7 +103,7 @@ const selectedColumn = computed<SelectableColumn | null>({
     }
   },
 });
-
+const hasSelectedColumn = computed(() => selectedColumn.value !== null);
 /* ================= OPERATORS ================= */
 
 const columnType = computed<ColumnDataType>(() => selectedColumn.value?.dataType ?? "other");

@@ -1,6 +1,6 @@
 <template>
   <div class="mb-6">
-    <h3 class="font-semibold text-primary mb-3 text-lg">HAVING</h3>
+    <h3 class="font-semibold text-primary mb-3 text-lg bg-">HAVING</h3>
 
     <HavingConditionGroupBuilder
       v-if="having"

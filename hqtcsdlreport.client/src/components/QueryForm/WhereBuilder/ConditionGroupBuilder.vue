@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-light/30 rounded-2xl shadow p-4 mb-4">
+  <div class="bg-white rounded-2xl shadow p-4 mb-4">
     <!-- HEADER -->
     <div class="flex items-center justify-between mb-2">
       <div class="flex items-center gap-2">
@@ -51,7 +51,7 @@
     <div class="flex gap-2 mt-3">
       <select v-model="newType" class="input">
         <option value="condition">Condition</option>
-        <option value="group">Group</option>
+        <option value="group" :hidden="!canAddGroup">Group</option>
         <option value="raw">Raw</option>
       </select>
 
@@ -61,7 +61,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref, watch } from "vue";
 import type { Condition, ConditionGroup, RawCondition, ColumnRef } from "@/types/queryState";
 
 import ConditionItem from "./ConditionItem.vue";
@@ -91,6 +91,19 @@ const model = defineModel<ConditionGroup>({
 /* ================= STATE ================= */
 
 const newType = ref<"condition" | "group" | "raw">("condition");
+const canAddGroup = computed(() =>
+  model.value.conditions.some((cond) => {
+    if (isRaw(cond)) {
+      return cond.sql.trim().length > 0;
+    }
+
+    if (isCondition(cond)) {
+      return typeof cond.column === "object" && cond.column?.columnId !== undefined;
+    }
+
+    return false;
+  }),
+);
 
 /* ================= TYPE GUARDS ================= */
 
@@ -134,6 +147,10 @@ function createGroup(): ConditionGroup {
 
 function addCondition() {
   if (newType.value === "group") {
+    if (!canAddGroup.value) {
+      return;
+    }
+
     model.value.conditions.push(createGroup());
     return;
   }
@@ -149,4 +166,10 @@ function addCondition() {
 function removeCondition(index: number) {
   model.value.conditions.splice(index, 1);
 }
+
+watch(canAddGroup, (allowed) => {
+  if (!allowed && newType.value === "group") {
+    newType.value = "condition";
+  }
+});
 </script>
