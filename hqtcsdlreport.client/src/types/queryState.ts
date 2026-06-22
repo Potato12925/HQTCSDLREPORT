@@ -83,7 +83,7 @@ export type HavingCondition =
 
 export interface HavingConditionGroup {
   type: "AND" | "OR";
-  conditions: (HavingCondition | HavingConditionGroup)[];
+  conditions: (HavingCondition | HavingConditionGroup | RawCondition)[];
 }
 // ===================== WHERE/HAVING =====================
 

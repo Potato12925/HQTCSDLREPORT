@@ -336,6 +336,9 @@ function buildHavingGroup(group: HavingConditionGroup): string {
       if ("conditions" in c) {
         return `(${buildHavingGroup(c)})`;
       }
+      if ("sql" in c) {
+        return c.sql;
+      }
       return buildHavingCondition(c as HavingCondition);
     })
     .join(` \n${group.type} `);
