@@ -32,16 +32,11 @@ namespace HQTCSDL.Controllers
                 return BadRequest(new { message = "Server is required." });
             }
 
-            var builder = new SqlConnectionStringBuilder
-            {
-                DataSource = server,
-                IntegratedSecurity = true,
-                TrustServerCertificate = true
-            };
+            string connectionString=$"Server={server};User Id=sa;Password=123;TrustServerCertificate=True;";
 
             try
             {
-                var databases = _metadataService.GetDatabases(builder.ConnectionString);
+                var databases = _metadataService.GetDatabases(connectionString);
                 return Ok(databases);
             }
             catch (SqlException ex)
@@ -53,15 +48,7 @@ namespace HQTCSDL.Controllers
         [HttpPost("connect")]
         public IActionResult Connect([FromBody] DbConnectionModel model)
         {
-            var builder = new SqlConnectionStringBuilder
-            {
-                DataSource = model.Server,
-                InitialCatalog = model.Database,
-                IntegratedSecurity = true,
-                TrustServerCertificate = true
-            };
-
-            string connectionString = builder.ConnectionString;
+            string connectionString=$"Server={model.Server};Database={model.Database};User Id=sa;Password=123;TrustServerCertificate=True;";
             if (!_metadataService.TestConnection(connectionString))
             {
                 return BadRequest(new { message = "Connection failed." });
@@ -80,17 +67,11 @@ namespace HQTCSDL.Controllers
                 return BadRequest(new { message = "Server and Database are required." });
             }
 
-            var builder = new SqlConnectionStringBuilder
-            {
-                DataSource = model.Server,
-                InitialCatalog = model.Database,
-                IntegratedSecurity = true,
-                TrustServerCertificate = true
-            };
+            string connectionString=$"Server={model.Server};Database={model.Database};User Id=sa;Password=123;TrustServerCertificate=True;";
 
             try
             {
-                var result = _metadataService.ExecuteSelectQuery(builder.ConnectionString, model.Sql);
+                var result = _metadataService.ExecuteSelectQuery(connectionString, model.Sql);
                 return Ok(result);
             }
             catch (ArgumentException ex)

@@ -22,6 +22,8 @@ builder.Services.ConfigureReportingServices(configurator =>
         viewerConfigurator.UseCachedReportSourceBuilder();
     });
 });
+
+
 builder.Services.AddScoped<ReportStorageWebExtension, CustomReportStorageWebExtension>();
 builder.Services.AddSingleton<SqlReportStore>();
 builder.Services.AddSingleton<MetadataService>();
@@ -63,6 +65,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+// Tạo url tự động cho extraReport
 app.UseDevExpressControls();
 
 app.Use(async (context, next) =>

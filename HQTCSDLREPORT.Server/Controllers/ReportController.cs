@@ -27,17 +27,11 @@ namespace HQTCSDLREPORT.Server.Controllers
                 return BadRequest(new { message = "Server and Database are required." });
             }
 
-            var builder = new SqlConnectionStringBuilder
-            {
-                DataSource = model.Server,
-                InitialCatalog = model.Database,
-                IntegratedSecurity = true,
-                TrustServerCertificate = true
-            };
+            string connectionString=$"Server={model.Server};Database={model.Database};User Id=sa;Password=123;TrustServerCertificate=True;";
 
             try
             {
-                var dataTable = _metadataService.ExecuteSelectQueryAsDataTable(builder.ConnectionString, model.Sql);
+                var dataTable = _metadataService.ExecuteSelectQueryAsDataTable(connectionString, model.Sql);
                 var reportUrl = _sqlReportStore.Save(
                     dataTable,
                     model.Sql,
