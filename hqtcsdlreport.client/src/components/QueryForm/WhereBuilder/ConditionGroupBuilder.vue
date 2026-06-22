@@ -150,4 +150,3 @@ function removeCondition(index: number) {
   model.value.conditions.splice(index, 1);
 }
 </script>
-

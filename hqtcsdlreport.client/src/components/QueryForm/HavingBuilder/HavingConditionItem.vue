@@ -58,7 +58,7 @@
     />
 
     <input
-      v-else-if="!noValueOperators.includes(model.operator)"
+      v-else-if="columnType !== 'other' && !noValueOperators.includes(model.operator)"
       v-model="model.value"
       :type="inputType"
       placeholder="value"
@@ -160,7 +160,7 @@ const columnType = computed<ColumnDataType>(() => {
     const matchedByColumn = findAliasByColumn(model.value.aliasColumn);
     if (matchedByColumn) return matchedByColumn.dataType;
 
-    return props.aliases.find((a) => a.alias === (model.value as any).alias)?.dataType ?? "string";
+    return props.aliases.find((a) => a.alias === (model.value as any).alias)?.dataType ?? "other";
   }
 
   if (model.value.type === "aggregate") {
@@ -169,7 +169,7 @@ const columnType = computed<ColumnDataType>(() => {
     }
   }
 
-  return selectedColumn.value?.dataType ?? "string";
+  return selectedColumn.value?.dataType ?? "other";
 });
 
 const selectedAliasKey = computed<string>({
@@ -179,7 +179,9 @@ const selectedAliasKey = computed<string>({
     const byColumn = findAliasByColumn(model.value.aliasColumn);
     if (byColumn) return aliasOptionKey(byColumn);
 
-    const byName = props.aliases.find((a) => a.alias === (model.value as Extract<HavingCondition, { type: "alias" }>).alias);
+    const byName = props.aliases.find(
+      (a) => a.alias === (model.value as Extract<HavingCondition, { type: "alias" }>).alias,
+    );
     if (byName) return aliasOptionKey(byName);
 
     return "";
@@ -198,10 +200,23 @@ const selectedAliasKey = computed<string>({
 const operators = computed<Operator[]>(() => {
   switch (columnType.value) {
     case "number":
+      return ["=", "!=", ">", "<", ">=", "<=", "BETWEEN", "IN", "IS NULL", "IS NOT NULL"];
+
     case "date":
       return ["=", "!=", ">", "<", ">=", "<=", "BETWEEN", "IN", "IS NULL", "IS NOT NULL"];
+
     case "boolean":
       return ["=", "!=", "IS NULL", "IS NOT NULL"];
+
+    case "guid":
+      return ["=", "!=", "IN", "IS NULL", "IS NOT NULL"];
+
+    case "binary":
+      return ["=", "!=", "IS NULL", "IS NOT NULL"];
+
+    case "other":
+      return ["IS NULL", "IS NOT NULL"];
+
     case "string":
     default:
       return ["=", "!=", "LIKE", "IN", "IS NULL", "IS NOT NULL"];
@@ -311,7 +326,7 @@ function getDefaultColumn(): ColumnRef {
       tableId: 0,
       columnId: 0,
       columnName: "",
-      dataType: "string",
+      dataType: "other",
     };
   }
 
@@ -398,16 +413,37 @@ function normalizeSingleValue(value: unknown) {
     return false;
   }
 
+  if (columnType.value === "guid") {
+    return String(value ?? "").trim();
+  }
+
+  if (columnType.value === "binary") {
+    return String(value ?? "").trim();
+  }
+
+  if (columnType.value === "other") {
+    return undefined;
+  }
+
   return value ?? "";
 }
 
 function normalizeArrayValue(values: unknown[]) {
-  if (columnType.value !== "number") return values;
+  if (columnType.value === "number") {
+    return values.map((v) => {
+      if (v === "" || v == null) return "";
+      const parsed = Number(v);
+      return Number.isNaN(parsed) ? "" : parsed;
+    });
+  }
 
-  return values.map((v) => {
-    if (v === "" || v == null) return "";
-    const parsed = Number(v);
-    return Number.isNaN(parsed) ? "" : parsed;
-  });
+  if (columnType.value === "guid") {
+    return values.map((v) => String(v ?? "").trim()).filter(Boolean);
+  }
+  
+  if (columnType.value === "date") {
+    return values.map((v) => String(v ?? ""));
+  }
+  return values;
 }
 </script>

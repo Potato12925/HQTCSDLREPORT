@@ -53,19 +53,19 @@
         <select
           v-model="col.aggregate"
           class="border border-primary/20 px-2 py-1 rounded bg-light text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+          @change="onChangeAggregate(col)"
+          @focus="normalizeAggregate(col)"
         >
           <option :value="null">None</option>
-          <option>COUNT</option>
-          <option>SUM</option>
-          <option>AVG</option>
-          <option>MIN</option>
-          <option>MAX</option>
+          <option v-for="agg in getAvailableAggregates(col)" :key="agg" :value="agg">
+            {{ agg }}
+          </option>
         </select>
 
         <!-- ALIAS -->
         <input
           v-model="col.alias"
-          @input="col.alias = (col.alias || '').replace(/\s/g, '')"
+          @blur="normalizeAlias(col)"
           placeholder="alias"
           class="w-full border border-primary/20 px-2 py-1 rounded bg-light text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
         />
@@ -96,10 +96,9 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import type { QueryState, QueryTable, QueryColumn } from "@/types/queryState";
+import type { QueryState, QueryTable, QueryColumn, AggregateFunction  } from "@/types/queryState";
 
 import DistinctToggle from "@/components/QueryForm/DistinctToggle.vue";
-
 /* ========================
    PROPS
 ======================== */
@@ -187,6 +186,74 @@ const onchangeGroupReport = (col: QueryColumn) => {
         }
       }
     }
+  }
+};
+
+const normalizeAlias = (col: QueryColumn) => {
+  const alias = (col.alias || "").trim();
+
+  if (!alias) {
+    col.alias = null;
+    return;
+  }
+
+  // Cho phép: chữ, số, tiếng Việt, dấu cách, _
+  // Chặn: ; -- [ ] ' " . , ...
+  const isValid = /^[\p{L}\p{N}_ ]+$/u.test(alias);
+
+  if (!isValid || alias.length > 50) {
+    alert("Alias chỉ được chứa chữ, số, dấu cách, dấu _ và tối đa 50 ký tự.");
+    col.alias = null;
+    return;
+  }
+
+  // Gom nhiều dấu cách thành 1
+  col.alias = alias.replace(/\s+/g, " ");
+};
+
+
+const getAvailableAggregates = (col: QueryColumn): AggregateFunction[] => {
+  const dataType = col.column.dataType ?? "other";
+
+  switch (dataType) {
+    case "number":
+      return ["COUNT", "SUM", "AVG", "MIN", "MAX"];
+
+    case "string":
+    case "date":
+    case "boolean":
+    case "guid":
+      return ["COUNT", "MIN", "MAX"];
+
+    case "binary":
+    case "other":
+    default:
+      return ["COUNT"];
+  }
+};
+
+const onChangeAggregate = (col: QueryColumn) => {
+  if (!col.aggregate) return;
+
+  const allowed = getAvailableAggregates(col);
+
+  if (!allowed.includes(col.aggregate)) {
+    col.aggregate = null;
+  }
+
+  if (col.aggregate) {
+    col.show = true;
+    col.parameterReport = false;
+    col.groupReport = false;
+  }
+};
+const normalizeAggregate = (col: QueryColumn) => {
+  if (!col.aggregate) return;
+
+  const allowed = getAvailableAggregates(col);
+
+  if (!allowed.includes(col.aggregate)) {
+    col.aggregate = null;
   }
 };
 </script>

@@ -1,8 +1,10 @@
 <template>
-  <div class="mb-4 flex items-center gap-2">
+  <label
+    class="mb-4 flex items-center justify-center w-[150px] gap-2 cursor-pointer p-4 rounded-xl bg-white shadow-sm border border-primary/10"
+  >
     <input type="checkbox" v-model="state.distinct" />
     <span class="font-medium text-dark">DISTINCT</span>
-  </div>
+  </label>
 </template>
 
 <script setup lang="ts">

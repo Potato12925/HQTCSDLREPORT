@@ -40,7 +40,7 @@
     />
 
     <input
-      v-else-if="!noValueOperators.includes(model.operator)"
+      v-else-if="columnType !== 'other' && !noValueOperators.includes(model.operator)"
       v-model="model.value"
       :type="inputType"
       placeholder="value"
@@ -104,15 +104,26 @@ const selectedColumn = computed<SelectableColumn | null>({
 
 /* ================= OPERATORS ================= */
 
-const columnType = computed<ColumnDataType>(() => selectedColumn.value?.dataType ?? "string");
+const columnType = computed<ColumnDataType>(() => selectedColumn.value?.dataType ?? "other");
 
 const operators = computed<Operator[]>(() => {
   switch (columnType.value) {
     case "number":
     case "date":
       return ["=", "!=", ">", "<", ">=", "<=", "BETWEEN", "IN", "IS NULL", "IS NOT NULL"];
+
     case "boolean":
       return ["=", "!=", "IS NULL", "IS NOT NULL"];
+
+    case "guid":
+      return ["=", "!=", "IN", "IS NULL", "IS NOT NULL"];
+
+    case "binary":
+      return ["=", "!=", "IS NULL", "IS NOT NULL"];
+
+    case "other":
+      return ["IS NULL", "IS NOT NULL"];
+
     case "string":
     default:
       return ["=", "!=", "LIKE", "IN", "IS NULL", "IS NOT NULL"];
@@ -171,7 +182,7 @@ watch(
       model.value.value = ["", ""];
     } else if (op === "IN") {
       model.value.value = [];
-    } else if (op === "IS NULL" || op === "IS NOT NULL") {
+    } else if (op === "IS NULL" || op === "IS NOT NULL" || columnType.value === "other") {
       model.value.value = undefined;
     } else if (Array.isArray(model.value.value) || model.value.value == null) {
       model.value.value = columnType.value === "boolean" ? false : "";
@@ -206,15 +217,38 @@ function normalizeSingleValue(value: unknown) {
     return false;
   }
 
+  if (columnType.value === "guid") {
+    return String(value ?? "").trim();
+  }
+
+  if (columnType.value === "binary") {
+    return String(value ?? "").trim();
+  }
+
+  if (columnType.value === "other") {
+    return undefined;
+  }
+
   return value ?? "";
 }
 
 function normalizeArrayValue(values: unknown[]) {
-  if (columnType.value !== "number") return values;
-  return values.map((v) => {
-    if (v === "" || v == null) return "";
-    const parsed = Number(v);
-    return Number.isNaN(parsed) ? "" : parsed;
-  });
+  if (columnType.value === "number") {
+    return values.map((v) => {
+      if (v === "" || v == null) return "";
+      const parsed = Number(v);
+      return Number.isNaN(parsed) ? "" : parsed;
+    });
+  }
+
+  if (columnType.value === "guid") {
+    return values.map((v) => String(v ?? "").trim()).filter(Boolean);
+  }
+
+  if (columnType.value === "date") {
+    return values.map((v) => String(v ?? "").trim()).filter(Boolean);
+  }
+
+  return values;
 }
 </script>

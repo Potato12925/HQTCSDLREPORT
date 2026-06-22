@@ -3,14 +3,8 @@
     <TableTree :tables="tables" :loading="loading" @toggle-column="handleToggleColumn" />
 
     <div class="flex flex-col flex-1 min-w-0">
-      <SQLPreview
-        v-if="hasQueryState"
-        :state="queryState"
-        :server="server"
-        :database="database"
-      />
+      <SQLPreview v-if="hasQueryState" :state="queryState" :server="server" :database="database" />
       <QueryForm :queryState="queryState" />
-
     </div>
   </div>
 </template>
@@ -49,14 +43,18 @@ const queryState = ref<QueryState>({});
 ================================ */
 
 const mapSqlServerType = (sqlType: string): ColumnDataType => {
-  const t = sqlType.toLowerCase();
+  const t = sqlType
+    .toLowerCase()
+    .trim()
+    .replace(/\(.+\)/, "");
 
+  // Number
   if (
     [
+      "tinyint",
+      "smallint",
       "int",
       "bigint",
-      "smallint",
-      "tinyint",
       "decimal",
       "numeric",
       "float",
@@ -64,19 +62,42 @@ const mapSqlServerType = (sqlType: string): ColumnDataType => {
       "money",
       "smallmoney",
     ].includes(t)
-  )
+  ) {
     return "number";
+  }
 
-  if (["char", "varchar", "nchar", "nvarchar", "text", "ntext"].includes(t)) return "string";
+  // Boolean
+  if (t === "bit") {
+    return "boolean";
+  }
 
-  if (["date", "datetime", "datetime2", "smalldatetime", "time", "datetimeoffset"].includes(t))
+  // Date / Time
+  if (["date", "time", "datetime", "datetime2", "smalldatetime", "datetimeoffset"].includes(t)) {
     return "date";
+  }
 
-  if (t === "bit") return "boolean";
+  // Guid
+  if (t === "uniqueidentifier") {
+    return "guid";
+  }
 
-  return "string";
+  // String
+  if (["char", "varchar", "nchar", "nvarchar", "text", "ntext", "xml"].includes(t)) {
+    return "string";
+  }
+
+  // Binary
+  if (["binary", "varbinary", "image", "rowversion", "timestamp"].includes(t)) {
+    return "binary";
+  }
+
+  // Special types
+  if (["sql_variant", "hierarchyid", "geometry", "geography"].includes(t)) {
+    return "other";
+  }
+
+  return "other";
 };
-
 const mapToQueryColumn = (table: TableMetadata, column: ColumnMetadata): QueryColumn => {
   return {
     show: true,

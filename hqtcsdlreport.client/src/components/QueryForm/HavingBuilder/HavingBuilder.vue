@@ -43,10 +43,18 @@ const columns = computed<SelectableColumn[]>(() => {
   return tables.flatMap((table) => {
     const tableName = table.alias?.trim() || table.tableName;
 
-    return table.columns.map((c) => ({
-      ...c.column,
-      label: `${tableName}.${c.column.columnName}`,
-    }));
+    return table.columns
+      .filter((c) => {
+        const dataType = c.column.dataType ?? "other";
+
+        // Không nên cho HAVING theo binary / other
+        return dataType !== "binary" && dataType !== "other";
+      })
+      .map((c) => ({
+        ...c.column,
+        dataType: c.column.dataType ?? "other",
+        label: `${tableName}.${c.column.columnName}`,
+      }));
   });
 });
 
@@ -60,19 +68,21 @@ const aliases = computed<SelectableAlias[]>(() => {
       .filter((c) => !!c.alias?.trim())
       .map((c) => {
         const alias = c.alias!.trim();
+        const dataType = inferAliasType(c.column.dataType, c.aggregate);
 
         return {
           alias,
           label: `${alias} (${tableName}.${c.column.columnName})`,
-          dataType: inferAliasType(c.column.dataType, c.aggregate),
+          dataType,
           column: {
             tableId: c.column.tableId,
             columnId: c.column.columnId,
             columnName: c.column.columnName,
-            dataType: c.column.dataType,
+            dataType,
           },
         };
-      });
+      })
+      .filter((a) => a.dataType !== "binary" && a.dataType !== "other");
   });
 });
 
@@ -98,10 +108,31 @@ function inferAliasType(
   dataType: ColumnDataType | undefined,
   aggregate: "COUNT" | "SUM" | "AVG" | "MIN" | "MAX" | null | undefined,
 ): ColumnDataType {
-  if (aggregate === "COUNT" || aggregate === "SUM" || aggregate === "AVG") {
+  if (aggregate === "COUNT") {
     return "number";
   }
 
-  return dataType ?? "string";
+  if (aggregate === "SUM" || aggregate === "AVG") {
+    if (dataType === "number") return "number";
+
+    // SUM/AVG không hợp lệ với string/date/boolean/guid/binary/other
+    return "other";
+  }
+
+  if (aggregate === "MIN" || aggregate === "MAX") {
+    if (
+      dataType === "number" ||
+      dataType === "date" ||
+      dataType === "string" ||
+      dataType === "boolean" ||
+      dataType === "guid"
+    ) {
+      return dataType;
+    }
+
+    return "other";
+  }
+
+  return dataType ?? "other";
 }
 </script>

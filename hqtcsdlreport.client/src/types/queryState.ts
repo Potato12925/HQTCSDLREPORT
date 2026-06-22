@@ -1,9 +1,9 @@
 // ===================== BASIC =====================
 
 export type ID = number;
-
+export type AggregateFunction = NonNullable<QueryColumn["aggregate"]>;
 // ===================== COLUMN REF =====================
-export type ColumnDataType = "number" | "string" | "boolean" | "date";
+export type ColumnDataType = "number" | "string" | "boolean" | "date" | "guid" | "binary" | "other";
 
 export interface ColumnRef {
   tableId: ID;
@@ -80,7 +80,7 @@ export type HavingCondition =
       operator: Operator;
       value?: any;
     };
-    
+
 export interface HavingConditionGroup {
   type: "AND" | "OR";
   conditions: (HavingCondition | HavingConditionGroup)[];
@@ -95,7 +95,7 @@ export type WhereClause = {
 export type HavingClause = {
   mode: "builder";
   group: HavingConditionGroup;
-}
+};
 
 // ===================== ORDER BY =====================
 

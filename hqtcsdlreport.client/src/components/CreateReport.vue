@@ -34,6 +34,7 @@
           <input
             :id="`param-${col.key}`"
             v-model="parameterValues[col.key]"
+            disabled
             type="text"
             class="w-full rounded border border-primary/20 bg-light px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
             placeholder="Enter value"
@@ -226,8 +227,10 @@ const loadParameterValues = async () => {
       const values = rows
         .map((row) => {
           if (row?.[col.key] !== undefined) return row[col.key];
-          if (source?.outputName && row?.[source.outputName] !== undefined) return row[source.outputName];
-          if (source?.columnRef && row?.[source.columnRef] !== undefined) return row[source.columnRef];
+          if (source?.outputName && row?.[source.outputName] !== undefined)
+            return row[source.outputName];
+          if (source?.columnRef && row?.[source.columnRef] !== undefined)
+            return row[source.columnRef];
           return undefined;
         })
         .filter((v) => v !== undefined && v !== null && v !== "")
@@ -252,7 +255,7 @@ const groupColumns = computed<ReportColumnItem[]>(() => {
 
 watch(
   () => parameterColumns.value,
-  async (nextColumns, prevColumns) => {
+  async (nextColumns) => {
     const nextValues: Record<string, string> = {};
 
     for (const col of nextColumns) {
@@ -261,12 +264,7 @@ watch(
 
     parameterValues.value = nextValues;
 
-    // ✅ check có column mới không
-    const hasNewColumn =
-      !prevColumns || nextColumns.some((c) => !prevColumns.find((p) => p.key === c.key));
-
-    // ✅ chỉ call API khi cần
-    if (hasNewColumn && nextColumns.length > 0) {
+    if (nextColumns.length > 0) {
       await loadParameterValues();
     }
   },

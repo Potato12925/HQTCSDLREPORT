@@ -1,7 +1,9 @@
 <template>
   <div class="p-4 bg-light shadow-md relative">
     <div class="mb-3">
-      <label for="report-title" class="mb-1 block text-sm font-medium text-dark">Report Title</label>
+      <label for="report-title" class="mb-1 block text-sm font-medium text-dark"
+        >Report Title</label
+      >
       <input
         id="report-title"
         v-model="reportTitle"
@@ -122,6 +124,23 @@ function getColumn(col: any): string {
   return `${tableName}.${col.columnName}`;
 }
 
+function quoteSqlServerIdentifier(name: string) {
+  return `[${String(name).replace(/]/g, "]]")}]`;
+}
+
+function normalizeAlias(alias?: string | null) {
+  const value = alias?.trim();
+  if (!value) return "";
+
+  return value.replace(/\s+/g, " ");
+}
+
+function formatAlias(alias?: string | null) {
+  const value = normalizeAlias(alias);
+  if (!value) return "";
+
+  return ` AS ${quoteSqlServerIdentifier(value)}`;
+}
 // ===================== SELECT =====================
 function buildSelect(state: QueryState) {
   if (!state.tables) return "";
@@ -140,9 +159,7 @@ function buildSelect(state: QueryState) {
         col = `${c.aggregate}(${col})`;
       }
 
-      if (c.alias) {
-        col += ` AS ${c.alias}`;
-      }
+      col += formatAlias(c.alias);
 
       cols.push(col);
     });

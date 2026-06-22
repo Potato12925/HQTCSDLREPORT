@@ -14,7 +14,7 @@
       <OrderByBuilder :state="props.queryState" :columns="allColumns" />
     </div>
 
-    <div v-else class="text-gray-400 text-center mt-10">Please select columns from tables</div>
+    <div v-else class="text-gray-400 text-center mt-10">Chọn ít nhất một bảng để bắt đầu</div>
   </div>
 </template>
 
