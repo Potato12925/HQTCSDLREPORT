@@ -10,7 +10,7 @@
         </select>
       </div>
 
-      <button v-if="removable" @click="$emit('remove')" class="text-red-500">x</button>
+      <button v-if="removable" @click="$emit('remove')" class="text-red-500">✕</button>
     </div>
 
     <div class="space-y-2">

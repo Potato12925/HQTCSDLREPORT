@@ -5,8 +5,11 @@ const api = axios.create({
   withCredentials: true,
 });
 
-export const testApi = () => {
-  return api.get("/Data/test");
+export const testApi = ({ server, database }) => {
+  return axios.post("/api/Data/test", {
+    server,
+    database,
+  });
 };
 
 export const getDatabasesApi = (server) => {

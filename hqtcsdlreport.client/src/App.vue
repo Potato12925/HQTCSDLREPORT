@@ -135,22 +135,23 @@ const connect = async () => {
       server: server.value,
       database: database.value,
     });
+
     console.log(res.data);
 
-    if (res?.data?.message) {
-      isConnected.value = true;
+    isConnected.value = true;
 
-      localStorage.setItem("server", server.value);
-      localStorage.setItem("database", database.value);
-    } else {
-      alert("Kết nối thất bại!");
-    }
+    localStorage.setItem("server", server.value);
+    localStorage.setItem("database", database.value);
+
+    window.location.reload();
   } catch (err) {
     console.error(err);
-    alert("Không thể kết nối server!");
+
+    const message = err.response?.data?.message || err.message || "Không thể kết nối server!";
+
+    alert(message);
   } finally {
     loading.value = false;
-    window.location.reload();
   }
 };
 

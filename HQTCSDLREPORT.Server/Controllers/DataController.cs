@@ -18,9 +18,22 @@ namespace HQTCSDL.Controllers
             _metadataService = metadataService;
         }
 
-        [HttpGet("test")]
-        public IActionResult Test()
+        [HttpPost("test")]
+        public IActionResult Test([FromBody] DbConnectionModel model)
         {
+            if (model == null || string.IsNullOrWhiteSpace(model.Server) || string.IsNullOrWhiteSpace(model.Database))
+            {
+                return BadRequest(new { message = "Server/Database is required." });
+            }
+
+            string connectionString =
+                $"Server={model.Server};Database={model.Database};User Id=sa;Password=123;TrustServerCertificate=True;";
+
+            if (!_metadataService.TestConnection(connectionString))
+            {
+                return BadRequest(new { message = "Connection failed." });
+            }
+
             return Ok(new { message = "Test API" });
         }
 

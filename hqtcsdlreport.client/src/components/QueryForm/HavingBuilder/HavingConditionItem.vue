@@ -1,5 +1,5 @@
 <template>
-  <div class="flex gap-2 items-center flex-wrap">
+  <div class="flex gap-2 items-center flex-wrap bg-light border border-primary/20 rounded-xl p-2">
     <select v-model="conditionType" class="input">
       <option value="group_column">Group Column</option>
       <option value="aggregate">Aggregate</option>
@@ -65,7 +65,7 @@
       class="input"
     />
 
-    <button @click="$emit('remove')" class="text-red-500">x</button>
+    <button @click="$emit('remove')" class="text-red-500 ml-auto">✕</button>
   </div>
 </template>
 
