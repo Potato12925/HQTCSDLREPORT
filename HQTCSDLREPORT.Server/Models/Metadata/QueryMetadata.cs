@@ -13,18 +13,6 @@
             ORDER BY name;
         ";
 
-        public const String getTablesQuery = @"
-            SELECT 
-                t.object_id AS ObjectId,
-                t.name AS TableName,
-                s.name AS SchemaName
-            FROM sys.tables t
-            JOIN sys.schemas s 
-                ON t.schema_id = s.schema_id
-            WHERE t.name NOT LIKE 'sys%' 
-              AND t.name NOT LIKE 'MS%'
-        ";
-
         public const String getForeighKey = @"
             SELECT 
                 fk.name AS ForeignKeyName,

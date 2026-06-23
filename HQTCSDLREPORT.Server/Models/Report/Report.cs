@@ -168,14 +168,14 @@ namespace HQTCSDLREPORT.Server
                 Bands.Remove(band);
             }
 
-            for (var i = 0; i < normalizedGroupColumns.Count; i++)
-            {
+            for (var i = normalizedGroupColumns.Count - 1; i >= 0; i--)
+{
                 var groupColumn = normalizedGroupColumns[i];
 
                 var groupHeader = new GroupHeaderBand
                 {
                     HeightF = 30f,
-                    Level = normalizedGroupColumns.Count - i - 1
+                    Level = i
                 };
 
                 groupHeader.GroupFields.Add(

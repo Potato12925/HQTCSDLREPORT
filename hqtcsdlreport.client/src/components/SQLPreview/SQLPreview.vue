@@ -104,7 +104,29 @@ const reportTitle = ref("");
 let copyResetTimer: ReturnType<typeof setTimeout> | null = null;
 
 // ===================== HELPERS =====================
+function isValidHavingCondition(cond: HavingCondition): boolean {
+  if (cond.type === "aggregate") {
+    return !!cond.fn && isValidColumn(cond.column);
+  }
 
+  if (cond.type === "group_column") {
+    return isValidColumn(cond.column);
+  }
+
+  if (cond.type === "alias") {
+    return !!cond.alias?.trim();
+  }
+
+  return false;
+}
+function isValidColumn(col: any): boolean {
+  if (typeof col === "string") return col.trim().length > 0;
+  return !!col?.columnName;
+}
+
+function isValidRaw(sql?: string): boolean {
+  return !!sql?.trim();
+}
 // table alias or name
 function getTableName(table: QueryTable) {
   return table.alias || table.tableName;
@@ -113,14 +135,12 @@ function getTableName(table: QueryTable) {
 // column name
 function getColumn(col: any): string {
   if (typeof col === "string") return col;
+  if (!col?.columnName) return "";
 
-  // tìm table theo tableId
   const table = props.state.tables?.find((t) => t.id === col.tableId);
-
   if (!table) return col.columnName;
 
   const tableName = table.alias || table.tableName;
-
   return `${tableName}.${col.columnName}`;
 }
 
@@ -259,23 +279,34 @@ function buildCondition(cond: Condition): string {
 }
 
 function buildConditionGroup(group: ConditionGroup): string {
-  return group.conditions
+  const parts = group.conditions
     .map((c) => {
       if ("conditions" in c) {
-        return `(${buildConditionGroup(c)})`;
+        const nested = buildConditionGroup(c);
+        return nested ? `(${nested})` : "";
       }
+
       if ("sql" in c) {
-        return c.sql;
+        return isValidRaw(c.sql) ? c.sql.trim() : "";
       }
+
+      if (!isValidColumn(c.column)) return "";
+
       return buildCondition(c);
     })
-    .join(` \n${group.type} `);
+    .filter(Boolean);
+
+  return parts.join(` \n${group.type} `);
 }
 
 function buildWhere(state: QueryState) {
   const whereGroup = state.where?.group;
-  if (!whereGroup?.conditions?.length) return;
-  return `WHERE ${buildConditionGroup(whereGroup)}`;
+  if (!whereGroup) return "";
+
+  const sql = buildConditionGroup(whereGroup);
+  if (!sql) return "";
+
+  return `WHERE ${sql}`;
 }
 
 // ===================== GROUP BY =====================
@@ -331,23 +362,30 @@ function buildHavingCondition(cond: HavingCondition): string {
 }
 
 function buildHavingGroup(group: HavingConditionGroup): string {
-  return group.conditions
+  const parts = group.conditions
     .map((c) => {
       if ("conditions" in c) {
-        return `(${buildHavingGroup(c)})`;
+        const nested = buildHavingGroup(c);
+        return nested ? `(${nested})` : "";
       }
-      if ("sql" in c) {
-        return c.sql;
-      }
+
+      if (!isValidHavingCondition(c as HavingCondition)) return "";
+
       return buildHavingCondition(c as HavingCondition);
     })
-    .join(` \n${group.type} `);
+    .filter(Boolean);
+
+  return parts.join(` \n${group.type} `);
 }
 
 function buildHaving(state: QueryState) {
   const havingGroup = state.having?.group;
-  if (!havingGroup?.conditions?.length) return;
-  return `HAVING ${buildHavingGroup(havingGroup)}`;
+  if (!havingGroup) return "";
+
+  const sql = buildHavingGroup(havingGroup);
+  if (!sql) return "";
+
+  return `HAVING ${sql}`;
 }
 
 // ===================== ORDER =====================
